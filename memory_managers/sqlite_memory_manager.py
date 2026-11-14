@@ -1,6 +1,6 @@
 #Copyright (c) 2026 Gene B. Denney. All Rights Reserved.
 
-import sqlite3, os, uuid, json
+import sqlite3, os, uuid
 from datetime import datetime
 from uuid import UUID
 from pathlib import Path
@@ -36,8 +36,7 @@ class SQLiteMemoryManager(IdTrackedMemoryManger):
                 name TEXT,
                 description TEXT
             );
-            '''
-        )
+            ''')
 
         cursor.execute(
             '''
@@ -73,35 +72,6 @@ class SQLiteMemoryManager(IdTrackedMemoryManger):
         self.db_connection.commit()
         cursor.close()
 
-
-    def update_chat_summary(self, name: str, description: str):
-        cursor = self.db_connection.cursor()
-        cursor.execute('''
-            UPDATE chat_summaries 
-            SET name = ?, description = ?
-            WHERE chat_id = ?
-        ''', (  name, description, f'{self.chat_id.hex}'))
-
-        self.db_connection.commit()
-        cursor.close()
-
-    def _update_chat_summary_last_used(self):
-        cursor = self.db_connection.cursor()
-        cursor.execute('''
-            UPDATE chat_summaries 
-            SET last_used = ?
-            WHERE chat_id = ?
-        ''', ( datetime.now().isoformat(), f'{self.chat_id.hex}'))
-
-        self.db_connection.commit()
-        cursor.close()
-
-    def set_id(self, id, max_records_to_reload):
-        self.chat_id = id
-        self.max_records_to_reload = max_records_to_reload
-
-        self._reload()
-
     def _reload(self):
         self.memory.clear()
         cursor = self.db_connection.cursor()
@@ -118,6 +88,41 @@ class SQLiteMemoryManager(IdTrackedMemoryManger):
         for r in results or []:
             tar = TARecord.from_json(r[0])
             self.memory.append(tar)
+
+    def _update_chat_summary_last_used(self):
+        cursor = self.db_connection.cursor()
+        cursor.execute('''
+            UPDATE chat_summaries 
+            SET last_used = ?
+            WHERE chat_id = ?
+        ''', ( datetime.now().isoformat(), f'{self.chat_id.hex}'))
+
+        self.db_connection.commit()
+        cursor.close()
+
+    def update_chat_summary(self, name: str, description: str):
+        cursor = self.db_connection.cursor()
+        cursor.execute('''
+            UPDATE chat_summaries 
+            SET name = ?, description = ?
+            WHERE chat_id = ?
+        ''', (  name, description, f'{self.chat_id.hex}'))
+
+        self.db_connection.commit()
+        cursor.close()
+
+    def set_id(self, id, max_records_to_reload):
+        self.chat_id = id
+        self.max_records_to_reload = max_records_to_reload
+        self._reload()
+
+    def delete_chat(self):
+        cursor = self.db_connection.cursor()
+        cursor.execute("DELETE FROM chat_summaries WHERE ichat_id = ?", (self.chat_id,))
+        cursor.execute("DELETE FROM chat_records WHERE ichat_id = ?", (self.chat_id,))
+        self.db_connection.commit()
+        cursor.close()
+
 
     def get_context(self) -> list[TARecord]:
         return self.memory

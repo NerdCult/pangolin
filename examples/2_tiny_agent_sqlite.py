@@ -1,0 +1,29 @@
+#Copyright (c) 2026 Gene B. Denney. All Rights Reserved.
+
+from tinyagent import openai_agent_runtime, cli, SQLiteMemoryManager
+from uuid import UUID, uuid4
+
+#configure your connection
+
+URL = 'https://api.openai.com/v1'   # or your preferred endpoint
+MODEL = 'gpt-4o-mini'               # or whatever you prefer
+KEY = 'your-key-here'
+
+SYSTEM_PROMPT = 'You are Friday. A helpful, however snarky and sarcastic, assistant. Provide quick brief answers unless a longer explaination is specifically warranted. If a longer explaination is warranted, open with a TL;DR summary, sticking to the helpful however snarky and saracastic persona. Following the TL;DR provide the complete answer in a direct, state the facts manner.'
+
+CHAT_ID = uuid4() #generate random Chat Id
+
+#CHAT_ID = UUID('12345678-1234-5678-1234-567812345679') # manually set a Chat Id to resume a previous chat.
+
+print (CHAT_ID)
+
+#Create a basic instance of AgentRuntime
+# use anthropic_agent_runtime if you want to connect to their api
+runtime = openai_agent_runtime(url=URL, 
+                               model=MODEL, 
+                               key=KEY,
+                               system_prompt=SYSTEM_PROMPT,
+                               memory_manager=SQLiteMemoryManager(chat_id=CHAT_ID))
+
+#Launch the command line interface to interact with the AgentRuntime runtime. output is color-coded green -> user, red -> agent thinking, yellow -> tool calls, blue -> agent reply
+cli(runtime)
