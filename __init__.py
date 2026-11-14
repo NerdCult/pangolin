@@ -8,6 +8,7 @@ from .toolboxes import BasicToolbox, AdvancedToolbox
 from .skill_managers import AdvancedSkillManager, SimpleSkillManager
 from.api_aggregators import DefaultApiAggregator
 from .utils import copy_built_in_skills, copy_built_in_tools
+from .memory_managers import SQLiteMemoryManager
 
 
 __all__ = [
@@ -27,5 +28,6 @@ __all__ = [
     'copy_built_in_tools',
     'copy_built_in_skills',
     'AdvancedSkillManager', 
-    'SimpleSkillManager'
+    'SimpleSkillManager',
+    'SQLiteMemoryManager'
 ]
