@@ -81,7 +81,7 @@ class AdvancedSkillManager(SkillManagerSkillMaker):
     def unload_skill(self, skill_name: str):
         LOGGER.info(f'skill unloading {skill_name}')
         self.loaded_skills.pop(self._resolve(skill_name))
-        LOGGER.info(f'skill unloaded {skill_name}')
+        LOGGER.debug(f'skill unloaded {skill_name}')
 
     def create_skill(self, skill_name: str, description: str, text: str):
         LOGGER.info(f'creating skill {skill_name}')

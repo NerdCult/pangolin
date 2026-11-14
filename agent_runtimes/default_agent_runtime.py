@@ -62,7 +62,7 @@ class DefaultAgentRuntime(AgentRuntime):
     def _tools(self) -> str | None:
         if self._has_tools():
             schemas = self.toolbox.schemas()
-            LOGGER.debug(schemas)
+            LOGGER.debug(f'tools {schemas}')
             return schemas
         return None
 
