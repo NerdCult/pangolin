@@ -10,3 +10,4 @@ class ToolCall:
     id: str | None = None
     name: str | None = None
     args: dict | None = None
+    thought_signature: str | None = None  # base64; provider-specific, ignored by others
