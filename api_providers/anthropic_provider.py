@@ -1,17 +1,18 @@
 #Copyright (c) 2026 Gene B. Denney. All Rights Reserved.
 
 from typing import Iterator
-
 from anthropic import Anthropic
-
+import logging
 from ..messages import TARecord, Part, ApiEvent, ToolCall
 from ..core.interfaces import Client, Provider
 
-DEFAULT_MAX_TOKENS = 8192
+LOGGER = logging.getLogger(__name__)
 
+DEFAULT_MAX_TOKENS = 8192
 
 class AnthropicClient(Client):
     def __init__(self, connection: Anthropic, model_name: str, max_tokens: int = DEFAULT_MAX_TOKENS):
+        LOGGER.info(f'__init__: {connection} {model_name} {max_tokens}')
         self.connection = connection
         self.model_name = model_name
         self.max_tokens = max_tokens
@@ -142,6 +143,7 @@ class AnthropicClient(Client):
         return converted
 
     def get_stream(self, messages: list[TARecord], tools: list[dict] | None = None) -> Iterator[ApiEvent]:
+        LOGGER.info(f'get_stream with {len(messages)} records and {len(tools) if tools else '0'} tools')
         system, wire = self._to_wire(messages)
         anthropic_tools = self._to_anthropic_tools(tools)
         kwargs = {
@@ -163,16 +165,19 @@ class AnthropicClient(Client):
                 event_type = getattr(event, "type", None)
 
                 if event_type == "text":
+                    LOGGER.debug(f'replying {event.text}')
                     yield ApiEvent(event_type="replying", content=event.text)
                     continue
 
                 if event_type == "thinking":
+                    LOGGER.debug(f'thinking: {event.thinking}')
                     yield ApiEvent(event_type="thinking", content=event.thinking)
                     continue
 
                 if event_type == "content_block_start":
                     block = event.content_block
                     if getattr(block, "type", None) == "tool_use":
+                        LOGGER.debug(f'tool call start: {block.name}')
                         calls[event.index] = ToolCall(id=block.id, name=block.name, args={})
                     continue
 
@@ -190,12 +195,14 @@ class AnthropicClient(Client):
                         call.name = getattr(block, "name", call.name)
                         call.args = args
                         calls[event.index] = call
+                        LOGGER.debug(f'tool calls: {calls}')
                         yield ApiEvent(event_type="tool_call", tool_calls=dict(calls))
                     continue
 
                 if event_type == "error":
                     err = getattr(event, "error", None)
                     message = getattr(err, "message", None) or str(err or event)
+                    LOGGER.error(f'api error {message}')
                     yield ApiEvent(event_type="done", content=message, raw=event)
                     return
 
@@ -203,20 +210,26 @@ class AnthropicClient(Client):
 
 
 class AnthropicProvider(Provider):
-    def __init__(self,  base_url: str, api_key: str, max_tokens: int = DEFAULT_MAX_TOKENS):
-        kwargs = {"api_key": api_key or None}
-        kwargs["base_url"] = base_url
+    def __init__(self,  url: str, key: str, max_tokens: int = DEFAULT_MAX_TOKENS):
+        LOGGER.info(f'__init__: {url} {max_tokens}')
+        LOGGER.debug(key)
+        kwargs = {"api_key": key or None}
+        kwargs["base_url"] = url
         self.connection = Anthropic(**kwargs)
         self.max_tokens = max_tokens
 
     def list_models(self) -> list[str]:
-        models = []
-        page = self.connection.models.list(limit=100)
-        models.extend(m.id for m in page.data)
-        while getattr(page, "has_more", False) and getattr(page, "last_id", None):
-            page = self.connection.models.list(limit=100, after_id=page.last_id)
+        try:
+            models = []
+            page = self.connection.models.list(limit=100)
             models.extend(m.id for m in page.data)
-        return models
+            while getattr(page, "has_more", False) and getattr(page, "last_id", None):
+                page = self.connection.models.list(limit=100, after_id=page.last_id)
+                models.extend(m.id for m in page.data)
+            return models
+        except Exception as e:
+            LOGGER.error(f'list_models error: {e}')
+            return []
 
     def make_client(self, model_name: str) -> AnthropicClient:
         return AnthropicClient(self.connection, model_name, max_tokens=self.max_tokens)

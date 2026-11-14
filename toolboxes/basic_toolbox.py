@@ -1,10 +1,12 @@
 #Copyright (c) 2026 Gene B. Denney. All Rights Reserved.
 
-import importlib, json, os, traceback, sys
+import importlib, json, os, traceback, sys, logging
 from pathlib import Path
 from typing import Iterator
 from ..core.interfaces.toolbox import Toolbox
 from ..messages.tool_call_result import ToolCallResult
+
+LOGGER = logging.getLogger(__name__)
 
 DEFAULT_TOOLS_DIR = F'{os.path.dirname(__file__)}/tools'
 DEFAULT_MAX_RESULTS_LENGTH = 50_000
@@ -20,16 +22,20 @@ BASIC_TOOL_SET = ['browse_files',
 class BasicToolbox(Toolbox):
 
     def __init__(self, max_results_length: int = DEFAULT_MAX_RESULTS_LENGTH):
+        LOGGER.info(f'__init__ {max_results_length}')
         self.max_results_length = max_results_length
         self.registry: dict = {}
 
     def load(self):
+        LOGGER.info('loading tools')
         for tool in BASIC_TOOL_SET:
             file = f'{DEFAULT_TOOLS_DIR}/{tool}.py'
             self._load_tool(Path(file))
-            
+
+        LOGGER.debug(f'tools loaded {len(self.registry)}')            
 
     def _load_tool(self, file: Path):
+        LOGGER.debug(f'loading tool {file}')
         spec = importlib.util.spec_from_file_location(file.stem, file)
         if spec is None or spec.loader is None:
             raise ImportError(file)
@@ -51,6 +57,7 @@ class BasicToolbox(Toolbox):
         return [{"type": "function", "function": s} for s, _ in self.registry.values()]
     
     def run_tool(self, name, args) -> str:
+        LOGGER.debug(f'running tool {name} {args}')
         entry = self.registry.get(name)
         if not entry:
             return json.dumps({"error": f"unknown tool {name}"})
@@ -63,6 +70,7 @@ class BasicToolbox(Toolbox):
             return json.dumps({"error": f"{type(e).__name__}: {e}"})
 
     def handle_tool_calls(self, calls) -> Iterator[ToolCallResult]:
+        LOGGER.info(f'handling tool calls {len(calls)}')
         for c in calls:
             try:
                 out = self.run_tool(c.name, c.args)

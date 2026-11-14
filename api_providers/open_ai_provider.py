@@ -1,14 +1,17 @@
 #Copyright (c) 2026 Gene B. Denney. All Rights Reserved.
 
 from openai import OpenAI
-import json
+import json, logging
 from typing import Iterator
 from ..core.interfaces import Provider, Client
 from ..messages import TARecord, Part, ApiEvent, ToolCall
 
+LOGGER = logging.getLogger(__name__)
+
 class OpenAIClient(Client):
-    def __init__(self, client: OpenAI, model_name: str):
-        self.provider = client
+    def __init__(self, connection: OpenAI, model_name: str):
+        LOGGER.info(f'__init__: {connection} {model_name}')
+        self.provider = connection
         self.model_name = model_name
     
     def part_to_openai(self, part: Part) -> dict:
@@ -39,14 +42,14 @@ class OpenAIClient(Client):
         return openai_messages
     
     def get_stream(self, messages: list[TARecord], tools: list[dict] | None = None) -> Iterator[ApiEvent]:
+        LOGGER.info(f'get_stream with {len(messages)} records and {len(tools) if tools else '0'} tools')
         if tools:
             stream = self.provider.chat.completions.create(
                 model=self.model_name, 
                 messages=self.messages_to_openai(messages),
                 tools=tools,
                 stream=True)
-        else:
-            
+        else:            
             stream = self.provider.chat.completions.create(
                 model=self.model_name, 
                 messages=self.messages_to_openai(messages),
@@ -67,6 +70,7 @@ class OpenAIClient(Client):
             rtext = getattr(delta, "reasoning_content", None) or extra.get  ("reasoning_content") or extra.get ("reasoning")
 
             if rtext:
+                LOGGER.debug(f'thinking: {rtext}')
                 yield ApiEvent(
                     event_type="thinking",
                     content=rtext,
@@ -74,6 +78,7 @@ class OpenAIClient(Client):
                  )
 
             if delta.content:
+                LOGGER.debug(f'replying {delta.content}')
                 yield ApiEvent(
                     event_type="replying",
                     content=delta.content,
@@ -81,6 +86,7 @@ class OpenAIClient(Client):
                 )
 
             for call in delta.tool_calls or []:
+                LOGGER.debug(f'tool call: {call.function.name} {call.function.arguments}')
                 idx = 0
                 if call.index:
                     idx = call.index
@@ -97,6 +103,7 @@ class OpenAIClient(Client):
                         raw_args[idx] = raw_args.get(idx, "") + call.function.arguments
 
             if finish_reason:
+                LOGGER.debug('round complete')
                 yield ApiEvent(event_type='done', content=finish_reason)
                 break
             
@@ -107,15 +114,22 @@ class OpenAIClient(Client):
                     c.args = json.loads(s) if s else {}
                 except json.JSONDecodeError:
                     c.args = {}   # or keep raw string if you want to be permissive
+            LOGGER.info(f'tool calls: {calls}')
             yield ApiEvent(event_type="tool_call", tool_calls=calls, raw=chunk)        
 
 class OpenAIProvider(Provider):
     def __init__(self, url: str, key: str = "", timeout: int = 600):
+        LOGGER.info(f'__init__: {url} ')
+        LOGGER.debug(key)
         self.connection = OpenAI(base_url=url, api_key=key, timeout=timeout)
     
     def list_models(self):
-        ids = [m.id for m in self.connection.models.list().data]
-        return sorted(i for i in ids if "image" not in i and "imagine" not in i)
+        try:
+            ids = [m.id for m in self.connection.models.list().data]
+            return sorted(i for i in ids if "image" not in i and "imagine" not in i)
+        except Exception as e:
+            LOGGER.error(f'list_models error: {e}')
+            return []
     
     def make_client(self, model_name: str):
         return OpenAIClient(self.connection, model_name)

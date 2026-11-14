@@ -1,10 +1,12 @@
 #Copyright (c) 2026 Gene B. Denney. All Rights Reserved.
 
-import importlib, json, os, traceback, sys
+import importlib, json, os, traceback, sys, logging
 from pathlib import Path
 from typing import Iterator
 from ..messages import ToolCallResult
 from ..core.interfaces.toolbox import ToolboxAdvanced, AgentRuntime
+
+LOGGER = logging.getLogger(__name__)
 
 DEFAULT_MAX_RESULTS_LENGTH = 50_000
 
@@ -15,21 +17,27 @@ class AdvancedToolbox(ToolboxAdvanced):
     tinyagent.copy_built_in_tools() will copy the built in tools to the current working directory + /tools.
     '''
     def __init__(self, tools_dir: str = f'{os.getcwd()}/tools', max_results_length: int = DEFAULT_MAX_RESULTS_LENGTH):
+        LOGGER.info(f'__init__ {tools_dir} {max_results_length}')
         self.tools_dir: str = tools_dir
         self.max_results_length = max_results_length
         self.registry: dict = {}
         Path(tools_dir).mkdir(parents=True, exist_ok=True)
 
     def set_session(self, session: AgentRuntime):
+        LOGGER.info('session set')
         self.session = session
 
     def load(self):
+        LOGGER.info('loading tools')
         for file in Path(self.tools_dir).glob('*.py'):
             if file.stem.startswith('__'):
                 continue
-            self._load_tool(file)            
+            self._load_tool(file)     
+
+        LOGGER.debug(f'tools loaded {len(self.registry)}')       
 
     def _load_tool(self, file: Path):
+        LOGGER.debug(f'loading tool {file}')
         spec = importlib.util.spec_from_file_location(file.stem, file)
         if spec is None or spec.loader is None:
             raise ImportError(file)
@@ -51,12 +59,15 @@ class AdvancedToolbox(ToolboxAdvanced):
         return [{"type": "function", "function": s} for s, _ in self.registry.values()]
 
     def create_tool(self, tool_name, code):
+        LOGGER.info(f'creating tool {tool_name}')
+        LOGGER.debug(code)
         tool_file_path = f'{self.tools_dir}/{tool_name}.py'
         with open(tool_file_path, 'w') as tool_file:
             tool_file.write(code)
-        self._load_tool(Path(tool_file_path), self.session)
+        self._load_tool(Path(tool_file_path))
 
     def run_tool(self, name, args) -> str:
+        LOGGER.debug(f'running tool {name} {args}')
         entry = self.registry.get(name)
         if not entry:
             return json.dumps({"error": f"unknown tool {name}"})
@@ -69,6 +80,7 @@ class AdvancedToolbox(ToolboxAdvanced):
             return json.dumps({"error": f"{type(e).__name__}: {e}"})
 
     def handle_tool_calls(self, calls) -> Iterator[ToolCallResult]:
+        LOGGER.info(f'handling tool calls {len(calls)}')
         for c in calls:
             try:
                 out = self.run_tool(c.name, c.args)

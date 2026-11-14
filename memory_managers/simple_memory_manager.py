@@ -1,13 +1,17 @@
 #Copyright (c) 2026 Gene B. Denney. All Rights Reserved.
 
+import logging
 from ..core.interfaces.memory_manager import MemoryManager
 from ..messages import TARecord, user_record
+
+LOGGER = logging.getLogger(__name__)
 
 class SimpleMemoryManager(MemoryManager):
     '''
     stores a single session history in memory, no persistence once the session is closed.
     '''
     def __init__(self):
+        LOGGER.info('__init__')
         self.memory: list = []
 
     def get_context(self) -> list[TARecord]:
@@ -15,9 +19,10 @@ class SimpleMemoryManager(MemoryManager):
 
     def add_context(self, message: TARecord):
         self.memory.append(message)
+        LOGGER.debug(f'message added {message}')
 
     def trim_context(self):
-        
+        LOGGER.debug('trimming context')
         dropped_tool_call_ids: set[str] = set()
 
         def pop_front():
@@ -34,4 +39,5 @@ class SimpleMemoryManager(MemoryManager):
             self.memory = [ m for m in self.memory if m.tool_call_id not in dropped_tool_call_ids]
 
         if not self.memory or len(self.memory) == 0:
+            LOGGER.info('trimming removed the entire history')
             self.memory.append(user_record('run away context trimming, deleted that whole context!'))
