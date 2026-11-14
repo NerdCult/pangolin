@@ -1,8 +1,10 @@
 #Copyright (c) 2026 Gene B. Denney. All Rights Reserved.
 
-import os
+import os, logging
 from pathlib import Path
 from ..core.interfaces import SkillManager
+
+LOGGER = logging.getLogger(__name__)
 
 SKILL_SUFFIXES = ('.md', '.json')
 
@@ -14,6 +16,7 @@ class SimpleSkillManager(SkillManager):
 
     '''
     def __init__(self, skill_folder: str = f'{os.getcwd()}/skills'):
+        LOGGER.info(f'__init__ {skill_folder}')
         self.skills_folder = Path(skill_folder)
         self.skills_all = ''
         Path(skill_folder).mkdir(parents=True, exist_ok=True)
@@ -25,6 +28,8 @@ class SimpleSkillManager(SkillManager):
         for path in sorted(self.skills_folder.iterdir(), key=lambda p: (p.stem, p.suffix == '.md')):
             with open(path, 'r') as f:
                 self.skills_all = f'{self.skills_all} \n\n{path.stem}:\n{f.read()}'
+
+        LOGGER.info('skills loaded')
 
     def skills(self) -> str:
         return self.skills_all
