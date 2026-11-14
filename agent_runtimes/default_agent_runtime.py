@@ -24,7 +24,7 @@ class DefaultAgentRuntime(AgentRuntime):
                  max_tokens: int = 32_000,
                  max_rounds: int = 10):
         
-        LOGGER.debug(f'__init__: \n{aggregator}\n{system_prompt}\n{memory_manager}\n{skill_manager}\n{toolbox}\n{max_tokens}\n{max_rounds} ')
+        LOGGER.info(f'__init__: \n{aggregator}\n{system_prompt}\n{memory_manager}\n{skill_manager}\n{toolbox}\n{max_tokens}\n{max_rounds} ')
 
         self.aggregator: ApiAggregator = aggregator
         self.system_prompt: str = system_prompt
