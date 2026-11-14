@@ -1,8 +1,10 @@
 #Copyright (c) 2026 Gene B. Denney. All Rights Reserved.
 
-import json, os
+import json, os, logging
 from pathlib import Path
 from ..core.interfaces import SkillManagerSkillMaker
+
+LOGGER = logging.getLogger(__name__)
 
 SKILL_SUFFIXES = ('.md', '.json')
 
@@ -38,6 +40,7 @@ class AdvancedSkillManager(SkillManagerSkillMaker):
 
     '''
     def __init__(self, skill_folder: str = f'{os.getcwd()}/skills', menu_preamble: str | None = None):
+        LOGGER.info(f'__init__ {skill_folder} {menu_preamble}')
         self.skills_folder = Path(skill_folder)
         self.menu_preamble: str = menu_preamble or 'Provided below are the available skills in this environment. To have it loaded into the context use the load_skill tools providing the name of the skill to load. Use unload_skill if a skill is no longer needed.'
         self.available: dict[str, Path] = {}  # name -> file
@@ -57,6 +60,8 @@ class AdvancedSkillManager(SkillManagerSkillMaker):
             lines.append(f'{name} = {parse_skill(path)[0]}')
         self.menu = '\n'.join(lines)
 
+        LOGGER.info('skills loaded')
+
     def skills(self) -> str:
         loaded = ''.join(f'\n {name}: {text}' for name, text in self.loaded_skills.items())
         return f'{self.menu_preamble}\n available skills:\n{self.menu}\n loaded skills:{loaded}'
@@ -68,13 +73,19 @@ class AdvancedSkillManager(SkillManagerSkillMaker):
         return name
 
     def load_skill(self, skill_name: str):
+        LOGGER.info(f'skill loading {skill_name}')
         name = self._resolve(skill_name)
         self.loaded_skills[name] = parse_skill(self.available[name])[1]
+        LOGGER.debug(f'skill loaded {skill_name}')
 
     def unload_skill(self, skill_name: str):
+        LOGGER.info(f'skill unloading {skill_name}')
         self.loaded_skills.pop(self._resolve(skill_name))
+        LOGGER.info(f'skill unloaded {skill_name}')
 
     def create_skill(self, skill_name: str, description: str, text: str):
+        LOGGER.info(f'creating skill {skill_name}')
+        LOGGER.debug(f'{description} {text}')
         name = skill_name_of(skill_name)
         if not name:
             raise ValueError('skill_name must not be empty')
@@ -82,4 +93,5 @@ class AdvancedSkillManager(SkillManagerSkillMaker):
         description = ' '.join(description.split())
         (self.skills_folder / f'{name}.md').write_text(
             f'---\ndescription: {description}\n---\n{text}\n', encoding='utf-8')
+        LOGGER.debug(f'skill created {skill_name}')
         self.reload_skills()

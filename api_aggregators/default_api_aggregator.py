@@ -1,13 +1,18 @@
 #Copyright (c) 2026 Gene B. Denney. All Rights Reserved.
 
+import logging
 from ..messages import TARecord, Part, AgentMessage, ToolCall, assistant_record
 from ..core.interfaces import Client, ApiAggregator
 
+LOGGER = logging.getLogger(__name__)
+
 class DefaultApiAggregator(ApiAggregator):
     def __init__(self, client: Client):
+        LOGGER.info(f'__init__: {client}')
         self.client: Client = client
 
     def process_context(self, context: list[TARecord], tools: list[dict]):
+            LOGGER.info(f'processing context with {len(context)} records and {len(tools) if tools else '0'} tools')
             content, calls = "", {}
             
             for event in self.client.get_stream(context, tools):
