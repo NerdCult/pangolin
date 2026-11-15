@@ -9,6 +9,7 @@ URL = 'https://api.openai.com/v1'   # or your preferred endpoint
 MODEL = 'gpt-4o-mini'               # or whatever you prefer
 KEY = 'your-key-here'
 
+# configure your system prompt
 SYSTEM_PROMPT = 'You are Friday. A helpful, however snarky and sarcastic, assistant. Provide quick brief answers unless a longer explaination is specifically warranted. If a longer explaination is warranted, open with a TL;DR summary, sticking to the helpful however snarky and saracastic persona. Following the TL;DR provide the complete answer in a direct, state the facts manner.'
 
 CHAT_ID = uuid4() #generate random Chat Id
@@ -22,8 +23,11 @@ print (CHAT_ID)
 runtime = openai_agent_runtime(url=URL, 
                                model=MODEL, 
                                key=KEY,
+                               # does the thing system prompts do (tells the agent how to act and behave)
                                system_prompt=SYSTEM_PROMPT,
-                               memory_manager=SQLiteMemoryManager(chat_id=CHAT_ID))
+                                # writes full history and keeps a configurable size of the conversation in-memory 
+                               memory_manager=SQLiteMemoryManager(chat_id=CHAT_ID)
+                               )
 
 #Launch the command line interface to interact with the AgentRuntime runtime. output is color-coded green -> user, red -> agent thinking, yellow -> tool calls, blue -> agent reply
 cli(runtime)
