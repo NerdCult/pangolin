@@ -30,7 +30,7 @@ class DefaultApiAggregator(ApiAggregator):
                 if event.event_type  == "done":
                     yield AgentMessage( behavior= 'done', content= event.content)
 
-            tool_calls = [ToolCall(id=c.id, name=c.name, args=c.args or {}) for c in calls.values()] 
+            tool_calls = list(calls.values())
 
             yield AgentMessage(behavior='message', message=TARecord(role='assistant', content=[Part(type='text', data={'text': content})] if content else None, tool_calls=tool_calls))
 

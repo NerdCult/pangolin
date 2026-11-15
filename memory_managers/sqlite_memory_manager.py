@@ -10,6 +10,7 @@ from ..core.types import ChatSummary
 from ..messages import TARecord, user_record
 
 LOGGER = logging.getLogger(__name__)
+DEFAULT_MAX_TO_RELOAD = 25
 
 class SQLiteMemoryManager(IdTrackedMemoryManger):
     '''
@@ -17,7 +18,7 @@ class SQLiteMemoryManager(IdTrackedMemoryManger):
     An in-memory list of TARecords is used to maintain what gets provided to AgentRuntime.
     The sqlite database is for persitence after restart.
     '''
-    def __init__(self, sqlite_path: str = f'{os.getcwd()}/db', chat_id: UUID =uuid.uuid4(), max_records_to_reload: int = 10):
+    def __init__(self, sqlite_path: str = f'{os.getcwd()}/db', chat_id: UUID =uuid.uuid4(), max_records_to_reload: int = DEFAULT_MAX_TO_RELOAD):
         LOGGER.info(f'__init__ {sqlite_path} {chat_id} {max_records_to_reload}')
         self.memory: list = []
         self.chat_id: UUID = chat_id
@@ -130,10 +131,11 @@ class SQLiteMemoryManager(IdTrackedMemoryManger):
 
     def delete_chat(self):
         cursor = self.db_connection.cursor()
-        cursor.execute("DELETE FROM chat_summaries WHERE ichat_id = ?", (self.chat_id,))
-        cursor.execute("DELETE FROM chat_records WHERE ichat_id = ?", (self.chat_id,))
+        cursor.execute("DELETE FROM chat_summaries WHERE chat_id = ?", (f'{self.chat_id.hex}',))
+        cursor.execute("DELETE FROM chat_records WHERE chat_id = ?", (f'{self.chat_id.hex}',))
         self.db_connection.commit()
         cursor.close()
+        self.memory.clear()
         LOGGER.info(f'history deleted for sessiion {self.chat_id}')
 
     def get_context(self) -> list[TARecord]:
