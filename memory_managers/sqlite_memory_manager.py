@@ -130,15 +130,6 @@ class SQLiteMemoryManager(IdTrackedMemoryManger):
         self.max_records_to_reload = max_records_to_reload
         self._reload()
 
-    def delete_chat(self):
-        cursor = self.db_connection.cursor()
-        cursor.execute("DELETE FROM chat_summaries WHERE chat_id = ?", (f'{self.chat_id.hex}',))
-        cursor.execute("DELETE FROM chat_records WHERE chat_id = ?", (f'{self.chat_id.hex}',))
-        self.db_connection.commit()
-        cursor.close()
-        self.memory.clear()
-        LOGGER.info(f'history deleted for sessiion {self.chat_id}')
-
     def get_context(self) -> list[TARecord]:
         return self.memory
 

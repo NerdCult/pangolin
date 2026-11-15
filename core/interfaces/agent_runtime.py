@@ -5,8 +5,8 @@ from ...messages import TARecord, AgentMessage
 
 class AgentRuntime(Protocol):
     '''
-    The central orchestration class.
+    The central orchestration class and entry point for running inference.
     manages the ApiAggregator, SkillsManager, Toolbox, and Memory Manager
-    hands messages between the different components
+    routes steps between the different components.
     '''
     def handle_user_message(self, message: TARecord) -> Iterator[AgentMessage]: ...
