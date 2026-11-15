@@ -11,11 +11,14 @@ LOGGER = logging.getLogger(__name__)
 DEFAULT_MAX_TOKENS = 8192
 
 class AnthropicClient(Client):
-    def __init__(self, connection: Anthropic, model_name: str, max_tokens: int = DEFAULT_MAX_TOKENS):
+    def __init__(self, connection: Anthropic, model_name: str, max_tokens: int = DEFAULT_MAX_TOKENS, **api_kwargs):
         LOGGER.info(f'__init__: {connection} {model_name} {max_tokens}')
         self.connection = connection
         self.model_name = model_name
         self.max_tokens = max_tokens
+        self.api_kwargs = api_kwargs
+        self.api_kwargs["model"] = self.model_name
+        self.api_kwargs["max_tokens"] = self.max_tokens
 
     def _part_to_anthropic(self, part: Part) -> dict:
         if part.type == "text":
@@ -146,21 +149,18 @@ class AnthropicClient(Client):
         LOGGER.info(f'get_stream with {len(messages)} records and {len(tools) if tools else '0'} tools')
         system, wire = self._to_wire(messages)
         anthropic_tools = self._to_anthropic_tools(tools)
-        kwargs = {
-            "model": self.model_name,
-            "max_tokens": self.max_tokens,
-            "messages": wire,
-        }
+
+        self.api_kwargs["messages"] = wire
         if system:
-            kwargs["system"] = system
+            self.api_kwargs["system"] = system
         if anthropic_tools:
-            kwargs["tools"] = anthropic_tools
+            self.api_kwargs["tools"] = anthropic_tools
 
         calls: dict[int, ToolCall] = {}
 
         # messages.stream() yields SDK helper events (text, thinking, input_json,
         # content_block_start/stop), not the raw SSE event types.
-        with self.connection.messages.stream(**kwargs) as stream:
+        with self.connection.messages.stream(**self.api_kwargs) as stream:
             for event in stream:
                 event_type = getattr(event, "type", None)
 
@@ -231,5 +231,5 @@ class AnthropicProvider(Provider):
             LOGGER.error(f'list_models error: {e}')
             return []
 
-    def make_client(self, model_name: str) -> AnthropicClient:
-        return AnthropicClient(self.connection, model_name, max_tokens=self.max_tokens)
+    def make_client(self, model_name: str, **api_kwargs) -> AnthropicClient:
+        return AnthropicClient(self.connection, model_name, max_tokens=self.max_tokens, **api_kwargs)

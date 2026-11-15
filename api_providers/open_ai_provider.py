@@ -9,11 +9,11 @@ from ..messages import TARecord, Part, ApiEvent, ToolCall
 LOGGER = logging.getLogger(__name__)
 
 class OpenAIClient(Client):
-    def __init__(self, connection: OpenAI, model_name: str, **kwargs):
+    def __init__(self, connection: OpenAI, model_name: str, **api_kwargs):
         LOGGER.info(f'__init__: {connection} {model_name}')
         self.provider = connection
         self.model_name = model_name
-        self.api_kwargs =  kwargs
+        self.api_kwargs =  api_kwargs
     
     def part_to_openai(self, part: Part) -> dict:
         if part.type == "text":
@@ -127,5 +127,5 @@ class OpenAIProvider(Provider):
             LOGGER.error(f'list_models error: {e}')
             return []
     
-    def make_client(self, model_name: str, **kwargs):
-        return OpenAIClient(self.connection, model_name, **kwargs)
+    def make_client(self, model_name: str, **api_kwargs):
+        return OpenAIClient(self.connection, model_name, **api_kwargs)

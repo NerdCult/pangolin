@@ -121,4 +121,5 @@ class GeminiProvider(Provider):
             return []
 
     def make_client(self, model_name: str, **api_kwargs):
+        ''' api_kwargs are passed into google.genai.types.GenerateContentConfig() '''
         return GeminiClient(self.client, model_name, **api_kwargs)
