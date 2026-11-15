@@ -14,7 +14,5 @@ class MemoryManager(Protocol):
 @runtime_checkable
 class IdTrackedMemoryManger(MemoryManager, Protocol):
     ''' Manages memory with support for Chat IDs for read/write from a persistence based storage provider'''
-    def set_id(self, id: str, max_records_to_reload: int): ...
-    ''' set the Chat ID and max record count to reload if resuming an existing session. AgentRuntime can call trim_context if needed. so this is not a guarantee of what the first turn will contain. '''
     def update_chat_summary(self, name: str, description: str): ...
     ''' update the name and description for the current chat history. could be called through a session aware tool or the external applicaition.'''

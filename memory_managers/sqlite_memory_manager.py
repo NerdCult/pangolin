@@ -35,7 +35,7 @@ class SQLiteMemoryManager(IdTrackedMemoryManger):
         if self._get_chat_summary(): # check for an existing chat history for the provided chat_id
             LOGGER.info(f'previous session found for {self.chat_id}')
             self._reload()
-            if self.memory[0].role != 'user':      # APIs like the first chat record to be a user message so trim the reloaded context
+            if len(self.memory) > 0 and self.memory[0].role != 'user':      # APIs like the first chat record to be a user message so trim the reloaded context
                 self.trim_context() 
         else: # create a new chat history
             LOGGER.info(f'creating new session history for {self.chat_id}')
@@ -158,15 +158,14 @@ class SQLiteMemoryManager(IdTrackedMemoryManger):
     # remove the oldest record from memory and return and tool call ids popped
     def pop_front(self) -> list[str]:
         popped = self.memory.pop(0)
-        if popped.tool_calls:
-            return [tc.id for tc in popped.tool_calls]
+        return [tc.id for tc in popped.tool_calls] if popped.tool_calls else []
 
     # trim the in-memory history to the first user message
     def _trim_context_to_first_user(self) -> list[str]:
         temp: set[str] = set()
         while self.memory and self.memory[0].role != 'user':
             LOGGER.debug('non user record trimmed')
-            temp.update(self.pop_front())
+            temp.update(self.pop_front()) 
         return temp
 
     # trim the context 
@@ -174,7 +173,7 @@ class SQLiteMemoryManager(IdTrackedMemoryManger):
         LOGGER.debug('trimming context')
         dropped_tool_call_ids: set[str] = set()
 
-        dropped_tool_call_ids.update(self.pop_front())
+        dropped_tool_call_ids.update(self.pop_front() )
 
         dropped_tool_call_ids.update(self._trim_context_to_first_user())
 

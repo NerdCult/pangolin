@@ -1,7 +1,7 @@
 #Copyright (c) 2026 Gene B. Denney. All Rights Reserved.
 
 from .cli import cli
-from .api_providers import  OpenAIProvider, OpenAIClient, AnthropicProvider, AnthropicClient
+from .api_providers import  OpenAIProvider, OpenAIClient, AnthropicProvider, AnthropicClient, GeminiProvider, GeminiClient
 from .agent_runtimes import DefaultAgentRuntime
 from .toolboxes import BasicToolbox, AdvancedToolbox
 from .skill_managers import AdvancedSkillManager, SimpleSkillManager
@@ -31,5 +31,7 @@ __all__ = [
     'SimpleSkillManager',
     'SQLiteMemoryManager',
     'create_gemini_client',
-    'gemini_agent_runtime'
+    'gemini_agent_runtime', 
+    'GeminiProvider', 
+    'GeminiClient'
 ]
