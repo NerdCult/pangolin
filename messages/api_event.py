@@ -13,4 +13,3 @@ class ApiEvent:
     event_type: EventType
     content: str | None = None
     tool_calls: list[ToolCall] | None = None
-    raw:  Any = None

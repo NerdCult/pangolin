@@ -16,6 +16,11 @@ ROLE_MAP = {"user": "user", "assistant": "model", "tool": "user"}
 
 class GeminiClient(Client):
     def __init__(self, client: genai.Client, model_name: str, **api_kwargs):
+        '''
+        client: a google.genai.Client 
+        model_name: must be a name the API knows. use GeminiProvider to get a list of models (not all work with new accounts or free tier)
+        api_kwargs: passed to types.GenerateContentConfig(). system_instruction and tools are set internally and should not be set in api_kwargs; thinking_config defaults with types.ThinkingConfig(include_thoughts=True) but can be set in api_kwargs.
+        '''
         LOGGER.info(f'__init__: {model_name}')
         self.client = client
         self.model_name = model_name
@@ -23,7 +28,8 @@ class GeminiClient(Client):
         if not 'thinking_config' in self.api_kwargs.keys():
             self.api_kwargs['thinking_config'] = types.ThinkingConfig(include_thoughts=True)
 
-    def _convert_tools(self, tools: list[dict] | None):
+    # converts OpenAI tools schemas to the format the Gemini APi expects
+    def _tools_to_gemini(self, tools: list[dict] | None):
         if not tools:
             return None
         decls = []
@@ -36,6 +42,7 @@ class GeminiClient(Client):
             ))
         return [types.Tool(function_declarations=decls)]
 
+    # converts TARecord.Parts to the format the Gemini API expects
     def _record_to_parts(self, record: TARecord, call_names: dict) -> list[types.Part]:
         if record.role == "tool":
             text = record.content[0].data.get("text", "") if record.content else ""
@@ -53,7 +60,8 @@ class GeminiClient(Client):
                 thought_signature=sig))
         return parts
 
-    def _to_contents(self, messages: list[TARecord]):
+    # converts list[TARecord] to the format the Gemini API expects
+    def _messages_to_gemini(self, messages: list[TARecord]):
         system, contents, call_names = [], [], {}
         for m in messages:
             if m.role == "system":
@@ -73,11 +81,12 @@ class GeminiClient(Client):
         return ("\n\n".join(system) or None), contents
 
     def get_stream(self, messages: list[TARecord], tools: list[dict] | None = None) -> Iterator[ApiEvent]:
-        system, contents = self._to_contents(messages)
+        ''' Sets the config with types.GenerateContentConfig() and calls models.generate_content(stream) converting the stream of GenerateContentResponse to ApiEvents '''
+        system, contents = self._messages_to_gemini(messages)
         LOGGER.info(f'get_stream with {len(contents)} contents and {len(tools) if tools else 0} tools')
         config = types.GenerateContentConfig(
             system_instruction=system,
-            tools=self._convert_tools(tools),
+            tools=self._tools_to_gemini(tools),
             **self.api_kwargs
         )
 
@@ -94,10 +103,11 @@ class GeminiClient(Client):
                     id=fc.id or f"call_{uuid.uuid4().hex[:8]}",
                     name=fc.name,
                     args=dict(fc.args or {}),
+                    # convert the thought_signature for easier handling internally
                     thought_signature=base64.b64encode(part.thought_signature).decode() if part.thought_signature else None))
                 elif part.text:
                     yield ApiEvent(event_type="thinking" if part.thought else "replying",
-                                   content=part.text, raw=chunk)
+                                   content=part.text)
             if cand.finish_reason:
                 finish = cand.finish_reason
 
@@ -109,6 +119,9 @@ class GeminiClient(Client):
 
 class GeminiProvider(Provider):
     def __init__(self, api_key: str):
+        '''
+        api_key: https://aistudio.google.com/docs/api-key Google kindly provides a free tier api key
+        '''
         self.client = genai.Client(api_key=api_key)
 
     def list_models(self):

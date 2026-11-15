@@ -10,12 +10,18 @@ LOGGER = logging.getLogger(__name__)
 
 class OpenAIClient(Client):
     def __init__(self, connection: OpenAI, model_name: str, **api_kwargs):
+        '''
+        connection: openai.OpenAI instance
+        model_name: must be a name recognized by the API use OpenAIProvider to get a list of models
+        api_kwargs: passed through to chat.completions.create() model, messages, tools, and stream set internally and should not be set in api_kwargs
+        '''
         LOGGER.info(f'__init__: {connection} {model_name}')
-        self.provider = connection
+        self.connection = connection
         self.model_name = model_name
         self.api_kwargs =  api_kwargs
-    
-    def part_to_openai(self, part: Part) -> dict:
+
+    # convert TARecord to the OpenAI format
+    def _part_to_openai(self, part: Part) -> dict:
         if part.type == "text":
             return {"type": "text", "text": part.data.get("text", "")}
         elif part.type == "image_url":
@@ -23,30 +29,35 @@ class OpenAIClient(Client):
         elif part.type == "audio":
             return {"type": "audio", "audio": part.data}
         return {"type": part.type, **part.data}
-    
-    def message_to_openai(self, message: TARecord) -> dict:
+
+    # convert TARecord to the OpenAI format
+    def _message_to_openai(self, message: TARecord) -> dict:
         if message.role == "tool":
             return {
                 "role": "tool",
                 "tool_call_id": message.tool_call_id,
                 "content": message.content[0].data.get("text", ""),
             }
-        result = {"role": message.role, "content": [self.part_to_openai(p) for p in message.content] if message.content else None}
+        result = {"role": message.role, "content": [self._part_to_openai(p) for p in message.content] if message.content else None}
         if message.tool_calls:
             result["tool_calls"] = [{'id': tc.id, 'type': 'function', 'function': {'name': tc.name, 'arguments': json.dumps(tc.args) if isinstance(tc.args, dict) else (tc.args or "{}")}} for tc in message.tool_calls]
         return result
 
-    def messages_to_openai(self, messages: list[TARecord]):
+    # converts a list[TARecord] to the OpenAI format
+    def _messages_to_openai(self, messages: list[TARecord]):
         openai_messages = []
         for m in messages:
-            openai_messages.append(self.message_to_openai(m))
+            openai_messages.append(self._message_to_openai(m))
         return openai_messages
     
     def get_stream(self, messages: list[TARecord], tools: list[dict] | None = None) -> Iterator[ApiEvent]:
+        '''
+        Calls chat.completeion.create(), yields the chunks as ApiEvents
+        '''
         LOGGER.info(f'get_stream with {len(messages)} records and {len(tools) if tools else '0'} tools')
-        stream = self.provider.chat.completions.create(
+        stream = self.connection.chat.completions.create(
             model=self.model_name, 
-            messages=self.messages_to_openai(messages),
+            messages=self._messages_to_openai(messages),
             tools=tools,
             stream=True,
             **self.api_kwargs)
@@ -83,7 +94,7 @@ class OpenAIClient(Client):
 
             for call in delta.tool_calls or []:
                 LOGGER.debug(f'tool call: {call.function.name} {call.function.arguments}')
-                idx = 0
+                idx = 0 # during development some apis were not providing indexs so this handles assigning one
                 if call.index:
                     idx = call.index
                 else:
@@ -95,7 +106,7 @@ class OpenAIClient(Client):
                 if call.function:
                     if call.function.name:
                         calls.setdefault(idx, ToolCall(id=call.id, name="", args={})).name = call.function.name
-                    if call.function.arguments:
+                    if call.function.arguments: # since the tool calls are streamed this functions as the accumulator
                         raw_args[idx] = raw_args.get(idx, "") + call.function.arguments
 
             if finish_reason:
@@ -111,10 +122,15 @@ class OpenAIClient(Client):
                 except json.JSONDecodeError:
                     c.args = {}   # or keep raw string if you want to be permissive
             LOGGER.info(f'tool calls: {calls}')
-            yield ApiEvent(event_type="tool_call", tool_calls=list(calls.values()), raw=chunk)        
+            yield ApiEvent(event_type="tool_call", tool_calls=list(calls.values()))        
 
 class OpenAIProvider(Provider):
     def __init__(self, url: str, key: str = "", timeout: int = 600):
+        '''
+        url: the url for the desired OpenAI compatible endpoint
+        key: your api key if you have one
+        timeout: sets the timeout for OpenAI()
+        '''
         LOGGER.info(f'__init__: {url} ')
         LOGGER.debug(key)
         self.connection = OpenAI(base_url=url, api_key=key, timeout=timeout)
@@ -128,4 +144,8 @@ class OpenAIProvider(Provider):
             return []
     
     def make_client(self, model_name: str, **api_kwargs):
+        '''
+        model_name: must be a model name the API recognizes
+        kwargs: passed through the OpenAIClient created
+        '''
         return OpenAIClient(self.connection, model_name, **api_kwargs)

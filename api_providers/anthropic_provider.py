@@ -216,7 +216,7 @@ class AnthropicClient(Client):
                     err = getattr(event, "error", None)
                     message = getattr(err, "message", None) or str(err or event)
                     LOGGER.error(f'api error {message}')
-                    yield ApiEvent(event_type="done", content=message, raw=event)
+                    yield ApiEvent(event_type="done", content=message)
                     return
 
         yield ApiEvent(event_type="done", content="", tool_calls=list(calls.values()))
