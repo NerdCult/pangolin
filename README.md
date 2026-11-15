@@ -45,13 +45,15 @@ There is an example for Gemini in the examples folder. **Gemini offers a FREE ti
 
 ## Tools and Skills
 
-
-`the 'x'_agent_runtime methods` can accept a Skill Manager and a Toolbox.  
+`the 'x'_agent_runtime methods` can accept a system prompt, Memory Manager, Skill Manager, and a Toolbox. Memory Manager defaults to `SimpleMemoryManger` Skill Manger and Toolbox default to None. 
+- `SimpleMemoryManger` (in-memory with no persistence between sessions).
+- `SqliteMemoryManger` uses UUIDs to create and track sessions. Passing in a UUID will load the previous session if it exists. 
 - `SimpleSkillManager` loads all skill file in the skill directory (./skills).
 - `AdvancedSkillManager` provides a skills menu and instructions to load, unload, and create skills (requires AdvancedToolbox)
 - `BasicToolbox` lets you browse/read files, search the web, and load/unload skills.  
 - `AdvancedToolbox` adds file writing, deletion, tool creation, and skill creation. 
 **USE THE ADVANCED TOOLBOX WITH CAUTION — THERE ARE NO HARD BUILT-IN GUARDRAILS.**
+- the create_tool and delete_file tools are the dangerous one, if you want to not include them.
 
 To copy the built-in tools and skills run this script (moves them into the current working directory in tools and skills folders or you can set your own target dir):
 
