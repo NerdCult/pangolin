@@ -18,10 +18,6 @@ TinyAgent is a AI Agent library. Built to be functional out-of-the-box but compl
 
 The sample below runs a simple command-line chat interface.
 
-`DefaultAgentRuntime` can accept a Skill Manager and a Toolbox.  
-- `BasicToolbox` lets you browse/read files, search the web, and load/unload skills.  
-- `AdvancedToolbox` adds file writing, deletion, tool creation, and skill creation.  
-**USE THE ADVANCED TOOLBOX WITH CAUTION — THERE ARE NO HARD BUILT-IN GUARDRAILS.**
 
 ```python
 from tinyagent import openai_agent_runtime, cli
@@ -45,4 +41,23 @@ cli(runtime)
 
 When you see the `>>>` prompt, type your message and hit Enter.
 
-**Note:** Gemini's OpenAI-compatible API (currently in beta) works for basic chat but tools are currently broken due to a quirk in their beta implementation.
+There is an example for Gemini in the examples folder. **Gemini offers a FREE tier API token**, if you want to test this library free of charge (and don't run local ya know).
+
+## Tools and Skills
+
+
+`the 'x'_agent_runtime methods` can accept a Skill Manager and a Toolbox.  
+- `SimpleSkillManager` loads all skill file in the skill directory (./skills).
+- `AdvancedSkillManager` provides a skills menu and instructions to load, unload, and create skills (requires AdvancedToolbox)
+- `BasicToolbox` lets you browse/read files, search the web, and load/unload skills.  
+- `AdvancedToolbox` adds file writing, deletion, tool creation, and skill creation. 
+**USE THE ADVANCED TOOLBOX WITH CAUTION — THERE ARE NO HARD BUILT-IN GUARDRAILS.**
+
+To copy the built-in tools and skills run this script (moves them into the current working directory in tools and skills folders or you can set your own target dir):
+
+```
+from tinyagent import copy_built_in_tools, copy_built_in_skills
+
+copy_built_in_tools()
+copy_built_in_skills()
+```
