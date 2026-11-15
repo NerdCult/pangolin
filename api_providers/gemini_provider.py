@@ -20,6 +20,8 @@ class GeminiClient(Client):
         self.client = client
         self.model_name = model_name
         self.api_kwargs = api_kwargs
+        if not self.api_kwargs['thinking_config']:
+            self.api_kwargs['thinking_config'] = types.ThinkingConfig(include_thoughts=True),
 
     def _convert_tools(self, tools: list[dict] | None):
         if not tools:
@@ -76,7 +78,6 @@ class GeminiClient(Client):
         config = types.GenerateContentConfig(
             system_instruction=system,
             tools=self._convert_tools(tools),
-            thinking_config=types.ThinkingConfig(include_thoughts=True),
             **self.api_kwargs
         )
 
