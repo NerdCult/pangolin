@@ -15,10 +15,11 @@ DUMMY_SIGNATURE = b"skip_thought_signature_validator"
 ROLE_MAP = {"user": "user", "assistant": "model", "tool": "user"}
 
 class GeminiClient(Client):
-    def __init__(self, client: genai.Client, model_name: str):
+    def __init__(self, client: genai.Client, model_name: str, **api_kwargs):
         LOGGER.info(f'__init__: {model_name}')
         self.client = client
         self.model_name = model_name
+        self.api_kwargs = api_kwargs
 
     def _convert_tools(self, tools: list[dict] | None):
         if not tools:
@@ -76,6 +77,7 @@ class GeminiClient(Client):
             system_instruction=system,
             tools=self._convert_tools(tools),
             thinking_config=types.ThinkingConfig(include_thoughts=True),
+            **self.api_kwargs
         )
 
         calls, finish = {}, None
@@ -118,5 +120,5 @@ class GeminiProvider(Provider):
             LOGGER.error(f'list_models error: {e}')
             return []
 
-    def make_client(self, model_name: str):
-        return GeminiClient(self.client, model_name)
+    def make_client(self, model_name: str, **api_kwargs):
+        return GeminiClient(self.client, model_name, **api_kwargs)

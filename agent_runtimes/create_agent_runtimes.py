@@ -14,10 +14,11 @@ def openai_agent_runtime(url: str,
                          skill_manager: SkillManager | None = None,
                          toolbox: Toolbox | None = None,
                          max_tokens: int = 32_000,
-                         max_rounds: int = 10):
+                         max_rounds: int = 10,
+                         **api_kwargs):
     ''' helper function to simplify creating an AgentRuntime session with an OpenAI api'''
     return DefaultAgentRuntime(
-        aggregator= DefaultApiAggregator(client=create_openai_client(url=url, model=model, key=key)),
+        aggregator= DefaultApiAggregator(client=create_openai_client(url=url, model=model, key=key, **api_kwargs)),
         system_prompt=system_prompt,
         memory_manager=memory_manager or SimpleMemoryManager(),
         skill_manager=skill_manager,
@@ -35,10 +36,11 @@ def anthropic_agent_runtime(url: str,
                          skill_manager: SkillManager | None = None,
                          toolbox: Toolbox | None = None,
                          max_tokens: int = 32_000,
-                         max_rounds: int = 10):
+                         max_rounds: int = 10,
+                         **api_kwargs):
     ''' helper function to simplify creating an AgentRuntime session with the Anthropic api'''
     return DefaultAgentRuntime(
-        aggregator= DefaultApiAggregator(client=create_anthropic_client(url=url, model=model, key=key)),
+        aggregator= DefaultApiAggregator(client=create_anthropic_client(url=url, model=model, key=key, **api_kwargs)),
         system_prompt=system_prompt,
         memory_manager=memory_manager or SimpleMemoryManager(),
         skill_manager=skill_manager,
@@ -56,10 +58,11 @@ def gemini_agent_runtime(
                          skill_manager: SkillManager | None = None,
                          toolbox: Toolbox | None = None,
                          max_tokens: int = 32_000,
-                         max_rounds: int = 10):
-    ''' helper function to simplify creating an AgentRuntime session with the Anthropic api'''
+                         max_rounds: int = 10,
+                         **api_kwargs):
+    ''' helper function to simplify creating an AgentRuntime session with the Gemini api'''
     return DefaultAgentRuntime(
-        aggregator= DefaultApiAggregator(client=create_gemini_client( model=model, key=key)),
+        aggregator= DefaultApiAggregator(client=create_gemini_client( model=model, key=key, **api_kwargs)),
         system_prompt=system_prompt,
         memory_manager=memory_manager or SimpleMemoryManager(),
         skill_manager=skill_manager,

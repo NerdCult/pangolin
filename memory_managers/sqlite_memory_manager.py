@@ -18,10 +18,10 @@ class SQLiteMemoryManager(IdTrackedMemoryManger):
     An in-memory list of TARecords is used to maintain what gets provided to AgentRuntime.
     The sqlite database is for persitence after restart.
     '''
-    def __init__(self, sqlite_path: str = f'{os.getcwd()}/db', chat_id: UUID =uuid.uuid4(), max_records_to_reload: int = DEFAULT_MAX_TO_RELOAD):
+    def __init__(self, sqlite_path: str = f'{os.getcwd()}/db', chat_id: UUID | None = None, max_records_to_reload: int = DEFAULT_MAX_TO_RELOAD):
         LOGGER.info(f'__init__ {sqlite_path} {chat_id} {max_records_to_reload}')
         self.memory: list = []
-        self.chat_id: UUID = chat_id
+        self.chat_id: UUID = chat_id or uuid.uuid4()
         self.max_records_to_reload: int = max_records_to_reload
 
         Path(sqlite_path).mkdir(parents=True, exist_ok=True)
@@ -30,6 +30,7 @@ class SQLiteMemoryManager(IdTrackedMemoryManger):
         if self._get_chat_summary():
             LOGGER.info(f'previous session found for {self.chat_id}')
             self._reload()
+            self._trim_context_to_first_user()
         else:
             LOGGER.info(f'creating new session history for {self.chat_id}')
             self._set_chat_summary( '', '')
@@ -80,7 +81,7 @@ class SQLiteMemoryManager(IdTrackedMemoryManger):
         self.db_connection.commit()
         cursor.close()
 
-    def _reload(self):
+    def _reload(self,):
         self.memory.clear()
         cursor = self.db_connection.cursor()
         cursor.execute('''
@@ -154,20 +155,26 @@ class SQLiteMemoryManager(IdTrackedMemoryManger):
 
         LOGGER.debug(f'message added to session {self.chat_id} {message}')
         self._update_chat_summary_last_used()
+ 
+    def pop_front(self) -> list[str]:
+        popped = self.memory.pop(0)
+        if popped.tool_calls:
+            return [tc.id for tc in popped.tool_calls]
+        
+    def _trim_context_to_first_user(self) -> list[str]:
+        temp: set[str] = set()
+        while self.memory and self.memory[0].role != 'user':
+            LOGGER.debug('non user record trimmed')
+            temp.update(self.pop_front())
+        return temp
 
     def trim_context(self):
         LOGGER.debug('trimming context')
         dropped_tool_call_ids: set[str] = set()
 
-        def pop_front():
-            popped = self.memory.pop(0)
-            if popped.tool_calls:
-                dropped_tool_call_ids.update(tc.id for tc in popped.tool_calls)
+        dropped_tool_call_ids.update(self.pop_front())
 
-        pop_front()
-
-        while self.memory and self.memory[0].role != 'user':
-            pop_front()
+        dropped_tool_call_ids.update(self._trim_context_to_first_user())
 
         if dropped_tool_call_ids:
             self.memory = [ m for m in self.memory if m.tool_call_id not in dropped_tool_call_ids]

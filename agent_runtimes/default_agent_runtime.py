@@ -69,9 +69,9 @@ class DefaultAgentRuntime(AgentRuntime):
     def handle_user_message(self, message: TARecord) -> Iterator[AgentMessage]:    
         LOGGER.info(f'user massage recieved: {message.to_json()}')    
         self._add_context(message)
-        tool_calls = None
         for _ in range(self.max_rounds):
             context = self._get_context()
+            tool_calls = None
             for agent_message in self.aggregator.process_context(context, self._tools()):
                 if agent_message.behavior == 'message':
                     LOGGER.info(f'assistant message recieved: {agent_message.message}')
@@ -87,5 +87,3 @@ class DefaultAgentRuntime(AgentRuntime):
                 LOGGER.info('making tool calls')
                 for result in self.toolbox.handle_tool_calls(tool_calls):
                     self._add_context(TARecord(role='tool', content=[Part(type='text', data={'text': result.result})], tool_call_id=result.id))
-
-                    

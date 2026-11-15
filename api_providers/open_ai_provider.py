@@ -9,10 +9,11 @@ from ..messages import TARecord, Part, ApiEvent, ToolCall
 LOGGER = logging.getLogger(__name__)
 
 class OpenAIClient(Client):
-    def __init__(self, connection: OpenAI, model_name: str):
+    def __init__(self, connection: OpenAI, model_name: str, **kwargs):
         LOGGER.info(f'__init__: {connection} {model_name}')
         self.provider = connection
         self.model_name = model_name
+        self.api_kwargs =  kwargs
     
     def part_to_openai(self, part: Part) -> dict:
         if part.type == "text":
@@ -43,17 +44,12 @@ class OpenAIClient(Client):
     
     def get_stream(self, messages: list[TARecord], tools: list[dict] | None = None) -> Iterator[ApiEvent]:
         LOGGER.info(f'get_stream with {len(messages)} records and {len(tools) if tools else '0'} tools')
-        if tools:
-            stream = self.provider.chat.completions.create(
-                model=self.model_name, 
-                messages=self.messages_to_openai(messages),
-                tools=tools,
-                stream=True)
-        else:            
-            stream = self.provider.chat.completions.create(
-                model=self.model_name, 
-                messages=self.messages_to_openai(messages),
-                stream=True)
+        stream = self.provider.chat.completions.create(
+            model=self.model_name, 
+            messages=self.messages_to_openai(messages),
+            tools=tools,
+            stream=True,
+            **self.api_kwargs)
 
         calls = {}
         raw_args = {}
@@ -115,7 +111,8 @@ class OpenAIClient(Client):
                 except json.JSONDecodeError:
                     c.args = {}   # or keep raw string if you want to be permissive
             LOGGER.info(f'tool calls: {calls}')
-            yield ApiEvent(event_type="tool_call", tool_calls=calls, raw=chunk)        
+            yield ApiEvent(event_type="tool_call", tool
+_calls=calls, raw=chunk)        
 
 class OpenAIProvider(Provider):
     def __init__(self, url: str, key: str = "", timeout: int = 600):
@@ -131,5 +128,5 @@ class OpenAIProvider(Provider):
             LOGGER.error(f'list_models error: {e}')
             return []
     
-    def make_client(self, model_name: str):
-        return OpenAIClient(self.connection, model_name)
+    def make_client(self, model_name: str, **kwargs):
+        return OpenAIClient(self.connection, model_name, **kwargs)
