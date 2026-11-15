@@ -12,11 +12,11 @@ Email me at gbdenney84@gmail.com to inquire about a license (or open a GitHub is
 For full legal terms, see the [LICENSE](LICENSE) file. Commercial use or uses outside the license always requires explicit written approval from the copyright holder (Gene B. Denney).
 
 ## Introduction
-TinyAgent is a AI Agent library. Built to be functional out-of-the-box but completely extensible and customisable. Each component implements  Python Protocol class and each edge has an internal data class for normalization. The core object is the AgentRuntime. AgentRuntime manages the recieving the user input, context building (chat history, system prompt, skills, and tools), the agent loop (api call, normalization, tool calls). The only required parameter to the AgentRuntime is an Api Client but can optionally take a system prompt, MemoryManger, SkillManger, Toolbox, max_tokens (for context size)  and max_rounds(for the agent loop). 
+TinyAgent is a AI Agent library. Built to be functional out-of-the-box but completely extensible and customisable. Each component implements  Python Protocol class and each edge has an internal data class for normalization. The core object is the AgentRuntime. AgentRuntime manages recieving the user input, context building (chat history, system prompt, skills, and tools), the agent loop (api call, normalization, tool calls). 
 
 ## Quick Start: Hello TinyAgent
 
-The sample below runs a simple command-line chat interface.
+The sample below runs a simple command-line chat interface. 
 
 
 ```python
@@ -36,26 +36,26 @@ cli(runtime)
 
 1. Save this as `hello_tiny_agent.py`
 2. Update the URL, MODEL, and KEY
-3. (Optional) Swap `openai_agent_runtime` for `anthropic_agent_runtime` if preferred
+3. (Optional) Swap `openai_agent_runtime` for `anthropic_agent_runtime` if preferred or use the 1_hello_tiny_agent_gemini.py from the examples folder.
 4. Run it: `python hello_tiny_agent.py`
 
 When you see the `>>>` prompt, type your message and hit Enter.
 
-There is an example for Gemini in the examples folder. **Gemini offers a FREE tier API token**, if you want to test this library free of charge (and don't run local ya know).
+**Gemini offers a FREE tier API token**, if you want to test this library free of charge (and don't run local ya know).
 
 ## Tools and Skills
 
-`the 'x'_agent_runtime methods` can accept a system prompt, Memory Manager, Skill Manager, and a Toolbox. Memory Manager defaults to `SimpleMemoryManger` Skill Manger and Toolbox default to None. 
+`the 'x'_agent_runtime methods` can accept a system prompt, Memory Manager, Skill Manager, and a Toolbox. Memory Manager defaults to `SimpleMemoryManger`, Skill Manger, and Toolbox default to None. 
 - `SimpleMemoryManger` (in-memory with no persistence between sessions).
 - `SqliteMemoryManger` uses UUIDs to create and track sessions. Passing in a UUID will load the previous session if it exists. 
-- `SimpleSkillManager` loads all skill file in the skill directory (./skills).
+- `SimpleSkillManager` loads all skill file in the skill directory (default ./skills).
 - `AdvancedSkillManager` provides a skills menu and instructions to load, unload, and create skills (requires AdvancedToolbox)
-- `BasicToolbox` lets you browse/read files, search the web, and load/unload skills.  
+- `BasicToolbox` hardcoded to only load tools to get current time, browse/read files, search the web, and load/unload skills.  
 - `AdvancedToolbox` adds file writing, deletion, tool creation, and skill creation. 
 **USE THE ADVANCED TOOLBOX WITH CAUTION — THERE ARE NO HARD BUILT-IN GUARDRAILS.**
-- the create_tool and delete_file tools are the dangerous one, if you want to not include them.
+- the create_tool and delete_file tools are the dangerous one, if you want to not include them. (delete_file only deletes within the current working directory, but with create_tool that guardrail is readily bypassed)
 
-To copy the built-in tools and skills run this script (moves them into the current working directory in tools and skills folders or you can set your own target dir):
+To copy the built-in tools and skills run this script (moves them into the current working directory in tools and skills folders or you can set your own target dir, set the same directory when initializing SkillManger and Toolbox):
 
 ```
 from tinyagent import copy_built_in_tools, copy_built_in_skills
