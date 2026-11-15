@@ -11,29 +11,38 @@ LOGGER = logging.getLogger(__name__)
 DEFAULT_TOOLS_DIR = F'{os.path.dirname(__file__)}/tools'
 DEFAULT_MAX_RESULTS_LENGTH = 50_000
 
+#hard coded list based on the built-in TinyAgent tools
 BASIC_TOOL_SET = ['browse_files',
                   'fetch_page',
                   'web_search',
                   'read_file',
-                  'load_skill',
-                  'unload_skill',
                   'get_utc_time']
 
 class BasicToolbox(Toolbox):
+    '''
+    BasicToolbox is the "safe" toolbox. only loading a set of tools provided in the constructor and WITHOUT the ability to create new tools, or load session aware tools.
+    '''
 
-    def __init__(self, max_results_length: int = DEFAULT_MAX_RESULTS_LENGTH):
+    def __init__(self, max_results_length: int = DEFAULT_MAX_RESULTS_LENGTH, tool_list: list[str] = BASIC_TOOL_SET):
+        '''
+        max_results_length: caps the tool result size to help control context size
+        tool_list: list of tools to load, the default is a list based on the built-in tools and enable web searching, file browsing/reading. 
+        '''
         LOGGER.info(f'__init__ {max_results_length}')
         self.max_results_length = max_results_length
         self.registry: dict = {}
+        self.tool_set = tool_list
 
+    # load tool_set
     def load(self):
         LOGGER.info('loading tools')
-        for tool in BASIC_TOOL_SET:
+        for tool in self.tool_set:
             file = f'{DEFAULT_TOOLS_DIR}/{tool}.py'
             self._load_tool(Path(file))
 
         LOGGER.debug(f'tools loaded {len(self.registry)}')            
 
+    # read and load the individual tool python file
     def _load_tool(self, file: Path):
         LOGGER.debug(f'loading tool {file}')
         spec = importlib.util.spec_from_file_location(file.stem, file)
@@ -53,9 +62,11 @@ class BasicToolbox(Toolbox):
         except Exception:
             traceback.print_exc()
 
+    # returns the OpenAI formatted tools schems
     def schemas(self) -> list[dict]:
         return [{"type": "function", "function": s} for s, _ in self.registry.values()]
-    
+
+    # execute a tool's method
     def run_tool(self, name, args) -> str:
         LOGGER.debug(f'running tool {name} {args}')
         entry = self.registry.get(name)
@@ -69,6 +80,7 @@ class BasicToolbox(Toolbox):
         except Exception as e:
             return json.dumps({"error": f"{type(e).__name__}: {e}"})
 
+    # handle the list[ToolCall] provided by AgentRuntime and return the ToolCallResults
     def handle_tool_calls(self, calls) -> Iterator[ToolCallResult]:
         LOGGER.info(f'handling tool calls {len(calls)}')
         for c in calls:

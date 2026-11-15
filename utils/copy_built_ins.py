@@ -4,7 +4,7 @@ import shutil, os
 from pathlib import Path
 
 def copy_built_in_tools(target_dir: str = f'{os.getcwd()}/tools'):
-    ''' helper function to copy the built-in tools to the folder where you manage your own tools. '''
+    ''' helper function to copy the built-in tools to the folder where you manage your own tools. VERIFY ALL TOOL FILES BEFORE ALLOWING AND AGENT TO EXECUTE THEM. SOME ARE QUITE POWERFUL. '''
     src_path = Path(F'{os.path.dirname(__file__)}/../toolboxes/tools')
     dst_path = Path(target_dir)
     dst_path.mkdir(parents=True, exist_ok=True)
@@ -14,7 +14,7 @@ def copy_built_in_tools(target_dir: str = f'{os.getcwd()}/tools'):
             shutil.copy2(file, dst_path)
 
 def copy_built_in_skills(target_dir: str = f'{os.getcwd()}/skills'):
-    ''' helper function to copy the built-in skills to the folder where you manage your own skills. '''
+    ''' helper function to copy the built-in skills to the folder where you manage your own skills. Built-in skills are mostly for TinyAgent development or demo'''
     src_path = Path(F'{os.path.dirname(__file__)}/../skill_managers/skills')
     dst_path = Path(target_dir)
     dst_path.mkdir(parents=True, exist_ok=True)

@@ -6,6 +6,7 @@ from .messages.ta_record import user_record
 init(autoreset=True)
 
 def cli(session: AgentRuntime):
+    '''simple command line interface to use an AgentRuntime. ctrl+c will cancel the agent's turn'''
     while True:
         thinking = False
         replying = False

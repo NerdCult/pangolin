@@ -18,23 +18,30 @@ class SQLiteMemoryManager(IdTrackedMemoryManger):
     An in-memory list of TARecords is used to maintain what gets provided to AgentRuntime.
     The sqlite database is for persitence after restart.
     '''
-    def __init__(self, sqlite_path: str = f'{os.getcwd()}/db', chat_id: UUID | None = None, max_records_to_reload: int = DEFAULT_MAX_TO_RELOAD):
-        LOGGER.info(f'__init__ {sqlite_path} {chat_id} {max_records_to_reload}')
-        self.memory: list = []
+    def __init__(self, sqlite_folder: str = f'{os.getcwd()}/db', chat_id: UUID | None = None, max_records_to_reload: int = DEFAULT_MAX_TO_RELOAD):
+        '''
+        sqlite_path: the folder where the database should be created. default is current working directory /db. the file created is ta_records.db
+        chat_id: can be provided to resume a session or one is created.
+        max_records_to_reload: the maximum records to reload when resuming a session
+        '''
+        LOGGER.info(f'__init__ {sqlite_folder} {chat_id} {max_records_to_reload}')
+        self.memory: list[TARecord] = []
         self.chat_id: UUID = chat_id or uuid.uuid4()
         self.max_records_to_reload: int = max_records_to_reload
 
-        Path(sqlite_path).mkdir(parents=True, exist_ok=True)
-        self.db_connection = sqlite3.connect(f'{sqlite_path}/ta_records.db')
-        self._verify_tables()
-        if self._get_chat_summary():
+        Path(sqlite_folder).mkdir(parents=True, exist_ok=True)
+        self.db_connection = sqlite3.connect(f'{sqlite_folder}/ta_records.db')
+        self._verify_tables() # verify the required tables exist
+        if self._get_chat_summary(): # check for an existing chat history for the provided chat_id
             LOGGER.info(f'previous session found for {self.chat_id}')
             self._reload()
-            self._trim_context_to_first_user()
-        else:
+            if self.memory[0].role != 'user':      # APIs like the first chat record to be a user message so trim the reloaded context
+                self.trim_context() 
+        else: # create a new chat history
             LOGGER.info(f'creating new session history for {self.chat_id}')
-            self._set_chat_summary( '', '')
+            self._set_chat_summary( '', '') # creates a session entry in the chat_summaries table with empty name and description
 
+    # verify the required tables, create if missing
     def _verify_tables(self):
         cursor = self.db_connection.cursor()
         cursor.execute('''
@@ -59,6 +66,7 @@ class SQLiteMemoryManager(IdTrackedMemoryManger):
         cursor.close()
         LOGGER.debug('tables verified')
 
+    # gets the chat summary for the selected chat_id if it exists
     def _get_chat_summary(self) -> ChatSummary | None:
         cursor = self.db_connection.cursor()
         cursor.execute("SELECT * FROM chat_summaries WHERE chat_id = ?", (f'{self.chat_id.hex}',))
@@ -71,6 +79,7 @@ class SQLiteMemoryManager(IdTrackedMemoryManger):
             description=r[3]
         )
 
+    # Creates the chat_summaries entry for a new chat_id
     def _set_chat_summary(self, name: str, description: str):
         cursor = self.db_connection.cursor()
         cursor.execute('''
@@ -81,6 +90,7 @@ class SQLiteMemoryManager(IdTrackedMemoryManger):
         self.db_connection.commit()
         cursor.close()
 
+    # load an existing chat history based on the chat_id
     def _reload(self,):
         self.memory.clear()
         cursor = self.db_connection.cursor()
@@ -92,14 +102,15 @@ class SQLiteMemoryManager(IdTrackedMemoryManger):
         ''', (f'{self.chat_id.hex}', self.max_records_to_reload))
 
         results = cursor.fetchall()
-        results.reverse()
+        results.reverse() # reverse the list to get it sorted asending by time
 
+        # add the records to memory
         for r in results or []:
-            tar = TARecord.from_json(r[0])
-            self.memory.append(tar)
+            self.memory.append(TARecord.from_json(r[0]))
 
-        LOGGER.debug(f'history reloaded for session {self.chat_id}')
+        LOGGER.debug(f'{len(self.memory)} records reloaded for session {self.chat_id}')
 
+    # update current chat summary with the last time it was used
     def _update_chat_summary_last_used(self):
         cursor = self.db_connection.cursor()
         cursor.execute('''
@@ -112,6 +123,7 @@ class SQLiteMemoryManager(IdTrackedMemoryManger):
         cursor.close()
         LOGGER.debug(f'last update time updated for session {self.chat_id}')
 
+    # update the chat summary with a name and description could be called by a session aware tool
     def update_chat_summary(self, name: str, description: str):
         cursor = self.db_connection.cursor()
         cursor.execute('''
@@ -125,14 +137,10 @@ class SQLiteMemoryManager(IdTrackedMemoryManger):
 
         LOGGER.debug(f'summary updated for session {self.chat_id}')
 
-    def set_id(self, id, max_records_to_reload):
-        self.chat_id = id
-        self.max_records_to_reload = max_records_to_reload
-        self._reload()
-
     def get_context(self) -> list[TARecord]:
         return self.memory
 
+    # append a TARecord to the history both in memory and in the database
     def add_context(self, message: TARecord):
         self.memory.append(message)
         cursor = self.db_connection.cursor()
@@ -146,12 +154,14 @@ class SQLiteMemoryManager(IdTrackedMemoryManger):
 
         LOGGER.debug(f'message added to session {self.chat_id} {message}')
         self._update_chat_summary_last_used()
- 
+
+    # remove the oldest record from memory and return and tool call ids popped
     def pop_front(self) -> list[str]:
         popped = self.memory.pop(0)
         if popped.tool_calls:
             return [tc.id for tc in popped.tool_calls]
-        
+
+    # trim the in-memory history to the first user message
     def _trim_context_to_first_user(self) -> list[str]:
         temp: set[str] = set()
         while self.memory and self.memory[0].role != 'user':
@@ -159,6 +169,7 @@ class SQLiteMemoryManager(IdTrackedMemoryManger):
             temp.update(self.pop_front())
         return temp
 
+    # trim the context 
     def trim_context(self):
         LOGGER.debug('trimming context')
         dropped_tool_call_ids: set[str] = set()

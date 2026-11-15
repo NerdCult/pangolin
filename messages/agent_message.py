@@ -8,7 +8,7 @@ agent_message_type = Literal['thinking', 'replying', 'tool_calls', 'message', 'd
 
 @dataclass
 class AgentMessage:
-    ''' Api Messages are translated to this data class before being passed the Agent Runtime '''
+    ''' ApiEvents are translated to this data class in the ApiAggregator before being passed the AgentRuntime '''
     behavior: agent_message_type
     content: str = '' 
     message: TARecord | None = None

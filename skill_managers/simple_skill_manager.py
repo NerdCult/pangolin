@@ -12,16 +12,20 @@ SKILL_SUFFIXES = ('.md', '.json')
 class SimpleSkillManager(SkillManager):
     '''
     Implements all the Skill Manger options. 
-    skills() returns a menu of available skill names and descriptions and how to use tools to load and unload skills as well as create new skills.
+    skills() the concatonation of the skills found.
 
     '''
     def __init__(self, skill_folder: str = f'{os.getcwd()}/skills'):
+        '''
+        skill_folder: the folder path for where skill markdown files are kept
+        '''
         LOGGER.info(f'__init__ {skill_folder}')
         self.skills_folder = Path(skill_folder)
         self.skills_all = ''
         Path(skill_folder).mkdir(parents=True, exist_ok=True)
         self.reload_skills()
 
+    # load the available skills
     def reload_skills(self):
         self.skills_all = ''
         
@@ -31,5 +35,6 @@ class SimpleSkillManager(SkillManager):
 
         LOGGER.info('skills loaded')
 
+    # provide the concatonation of the found skills
     def skills(self) -> str:
         return self.skills_all

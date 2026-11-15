@@ -31,7 +31,6 @@ def message_tokens(record: TARecord, counter: Counter = estimate_tokens,
 def count_tokens(messages: list[TARecord], tools: list[dict] | None = None,
                  counter: Counter = estimate_tokens, **kwargs) -> int:
     """Estimate total tokens for a list of messages plus optional tool schemas.
-
     kwargs are passed through to message_tokens (per_message_overhead, image_tokens).
     """
     total = sum(message_tokens(m, counter, **kwargs) for m in messages)
