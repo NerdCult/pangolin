@@ -80,33 +80,24 @@ class OpenAIClient(Client):
                 LOGGER.debug(f'thinking: {rtext}')
                 yield ApiEvent(
                     event_type="thinking",
-                    content=rtext,
-                    raw=chunk
+                    content=rtext
                  )
 
             if delta.content:
                 LOGGER.debug(f'replying {delta.content}')
                 yield ApiEvent(
                     event_type="replying",
-                    content=delta.content,
-                    raw=chunk
+                    content=delta.content
                 )
 
             for call in delta.tool_calls or []:
-                LOGGER.debug(f'tool call: {call.function.name} {call.function.arguments}')
-                idx = 0 # during development some apis were not providing indexs so this handles assigning one
-                if call.index:
-                    idx = call.index
-                else:
-                    surragate_call_indeces[call.id] = surragate_call_index
-                    idx = surragate_call_index
-                    surragate_call_index = surragate_call_index + 1
+                idx = call.index
                 if call.id:
                     calls.setdefault(idx, ToolCall(id=call.id, name="", args={})).id = call.id
                 if call.function:
                     if call.function.name:
                         calls.setdefault(idx, ToolCall(id=call.id, name="", args={})).name = call.function.name
-                    if call.function.arguments: # since the tool calls are streamed this functions as the accumulator
+                    if call.function.arguments:
                         raw_args[idx] = raw_args.get(idx, "") + call.function.arguments
 
             if finish_reason:

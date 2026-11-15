@@ -41,7 +41,7 @@ cli(runtime)
 
 When you see the `>>>` prompt, type your message and hit Enter.
 
-**Gemini offers a FREE tier API token**, if you want to test this library free of charge (and don't run local ya know).
+**Gemini offers a FREE tier API key** https://aistudio.google.com/docs/api-key if you want to test this library free of charge (and don't run local ya know).
 
 ## Tools and Skills
 

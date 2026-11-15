@@ -49,7 +49,7 @@ class AdvancedSkillManager(SkillManagerSkillMaker):
         '''
         LOGGER.info(f'__init__ {skill_folder} {menu_preamble}')
         self.skills_folder = Path(skill_folder)
-        self.menu_preamble: str = menu_preamble or 'Provided below are the available skills in this environment. To have one loaded into the context use the load_skill tool providing the name of the skill to load. Use unload_skill if a skill is no longer needed. Use create_skill to create a new skill; these can track user preferences, notes about a long running project of the user, or guides for performing tasks that may need to be repeated. '
+        self.menu_preamble: str = menu_preamble or 'Provided below are the available skills in this environment. To have one loaded into the context use the load_skill tool providing the name of the skill to load. Use unload_skill if a skill is no longer needed also passing the name of the skill. Use create_skill to create a new skill; these can track user preferences, notes about a long running project of the user, or guides for performing tasks that may need to be repeated. '
         self.available: dict[str, Path] = {}  # name -> file
         self.menu: str = ''
         self.loaded_skills: dict[str, str] = {}
