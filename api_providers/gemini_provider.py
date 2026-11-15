@@ -20,8 +20,8 @@ class GeminiClient(Client):
         self.client = client
         self.model_name = model_name
         self.api_kwargs = api_kwargs
-        if not self.api_kwargs['thinking_config']:
-            self.api_kwargs['thinking_config'] = types.ThinkingConfig(include_thoughts=True),
+        if not 'thinking_config' in self.api_kwargs.keys():
+            self.api_kwargs['thinking_config'] = types.ThinkingConfig(include_thoughts=True)
 
     def _convert_tools(self, tools: list[dict] | None):
         if not tools:
@@ -81,7 +81,7 @@ class GeminiClient(Client):
             **self.api_kwargs
         )
 
-        calls, finish = {}, None
+        calls, finish = [], None
         for chunk in self.client.models.generate_content_stream(
                 model=self.model_name, contents=contents, config=config):
             if not chunk.candidates:
@@ -90,12 +90,11 @@ class GeminiClient(Client):
             for part in (cand.content.parts or []) if cand.content else []:
                 if part.function_call:
                     fc = part.function_call
-                    calls[len(calls)] = ToolCall(
+                    calls.append(ToolCall(
                     id=fc.id or f"call_{uuid.uuid4().hex[:8]}",
                     name=fc.name,
                     args=dict(fc.args or {}),
-                    thought_signature=base64.b64encode(part.thought_signature).decode()
-                        if part.thought_signature else None)
+                    thought_signature=base64.b64encode(part.thought_signature).decode() if part.thought_signature else None))
                 elif part.text:
                     yield ApiEvent(event_type="thinking" if part.thought else "replying",
                                    content=part.text, raw=chunk)

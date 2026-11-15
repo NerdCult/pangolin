@@ -12,6 +12,12 @@ DEFAULT_MAX_TOKENS = 8192
 
 class AnthropicClient(Client):
     def __init__(self, connection: Anthropic, model_name: str, max_tokens: int = DEFAULT_MAX_TOKENS, **api_kwargs):
+        '''
+        connection: instance of anthropic.Anthropic
+        model_name: must match a known name to the api (use AnthropicProvider to get a list of models)
+        max_tokens: controls the api response size. (unlike runtime max_tokens that control size sent to the api)
+        api_kwargs: sent to messages.stream(). model, max_tokens, message, system, and tools set internally and should not be set in api_kwargs
+        '''
         LOGGER.info(f'__init__: {connection} {model_name} {max_tokens}')
         self.connection = connection
         self.model_name = model_name
@@ -20,6 +26,7 @@ class AnthropicClient(Client):
         self.api_kwargs["model"] = self.model_name
         self.api_kwargs["max_tokens"] = self.max_tokens
 
+    # convert ta_record.Part to the format the Anthropic API expects
     def _part_to_anthropic(self, part: Part) -> dict:
         if part.type == "text":
             return {"type": "text", "text": part.data.get("text", "")}
@@ -34,6 +41,7 @@ class AnthropicClient(Client):
             }
         return {"type": part.type, **part.data}
 
+    # converts the ta_record.Message to the format expected by the Anthropic API
     def _message_to_anthropic(self, message: TARecord) -> dict | None:
         if message.role == "system":
             return None
@@ -73,7 +81,8 @@ class AnthropicClient(Client):
             "content": [self._part_to_anthropic(p) for p in (message.content or [])],
         }
 
-    def _to_wire(self, messages: list[TARecord]) -> tuple[str | None, list[dict]]:
+    # converts a list[TARecord] to the format the Anthropic API format expects
+    def _messages_to_anthropic(self, messages: list[TARecord]) -> tuple[str | None, list[dict]]:
         system_parts: list[str] = []
         wire: list[dict] = []
         seen_tool_use_ids: set[str] = set()
@@ -132,6 +141,7 @@ class AnthropicClient(Client):
         system = "\n\n".join(system_parts) if system_parts else None
         return system, wire
 
+    # converts OpenAI tools schemas to the format Anthropic API expects
     def _to_anthropic_tools(self, tools: list[dict] | None) -> list[dict] | None:
         if not tools:
             return None
@@ -144,10 +154,11 @@ class AnthropicClient(Client):
                 "input_schema": fn.get("parameters") or {"type": "object", "properties": {}},
             })
         return converted
-
+    
     def get_stream(self, messages: list[TARecord], tools: list[dict] | None = None) -> Iterator[ApiEvent]:
+        ''' calls Anthropic.connection.messages.stream() and converts the MessageStream events to the internal ApiEvent format '''
         LOGGER.info(f'get_stream with {len(messages)} records and {len(tools) if tools else '0'} tools')
-        system, wire = self._to_wire(messages)
+        system, wire = self._messages_to_anthropic(messages)
         anthropic_tools = self._to_anthropic_tools(tools)
 
         self.api_kwargs["messages"] = wire
@@ -174,6 +185,7 @@ class AnthropicClient(Client):
                     yield ApiEvent(event_type="thinking", content=event.thinking)
                     continue
 
+                # tool call start
                 if event_type == "content_block_start":
                     block = event.content_block
                     if getattr(block, "type", None) == "tool_use":
@@ -184,6 +196,7 @@ class AnthropicClient(Client):
                 if event_type == "input_json":
                     continue
 
+                # convert Anthropic tool call to the internal ToolCall format
                 if event_type == "content_block_stop":
                     block = getattr(event, "content_block", None)
                     if block is not None and getattr(block, "type", None) == "tool_use":
@@ -196,7 +209,7 @@ class AnthropicClient(Client):
                         call.args = args
                         calls[event.index] = call
                         LOGGER.debug(f'tool calls: {calls}')
-                        yield ApiEvent(event_type="tool_call", tool_calls=dict(calls))
+                        yield ApiEvent(event_type="tool_call", tool_calls=list(calls.values()))
                     continue
 
                 if event_type == "error":
@@ -206,11 +219,16 @@ class AnthropicClient(Client):
                     yield ApiEvent(event_type="done", content=message, raw=event)
                     return
 
-        yield ApiEvent(event_type="done", content="", tool_calls=calls or None)
+        yield ApiEvent(event_type="done", content="", tool_calls=list(calls.values()))
 
 
 class AnthropicProvider(Provider):
     def __init__(self,  url: str, key: str, max_tokens: int = DEFAULT_MAX_TOKENS):
+        '''
+        url: https://api.anthropic.com is the anthropic provided api but other services use the same spec
+        key: your api key
+        max_tokens: limits the output size from the api. passed by default to make_client but can be set in that call too
+        '''
         LOGGER.info(f'__init__: {url} {max_tokens}')
         LOGGER.debug(key)
         kwargs = {"api_key": key or None}

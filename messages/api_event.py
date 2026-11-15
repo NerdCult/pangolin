@@ -12,5 +12,5 @@ class ApiEvent:
     This data class helps support the aggregators responsibility to compose the complete response for use in a TARecord'''
     event_type: EventType
     content: str | None = None
-    tool_calls: dict[int, ToolCall] | None = None
+    tool_calls: list[ToolCall] | None = None
     raw:  Any = None

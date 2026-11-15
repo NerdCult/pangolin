@@ -111,7 +111,7 @@ class OpenAIClient(Client):
                 except json.JSONDecodeError:
                     c.args = {}   # or keep raw string if you want to be permissive
             LOGGER.info(f'tool calls: {calls}')
-            yield ApiEvent(event_type="tool_call", tool_calls=calls, raw=chunk)        
+            yield ApiEvent(event_type="tool_call", tool_calls=list(calls.values()), raw=chunk)        
 
 class OpenAIProvider(Provider):
     def __init__(self, url: str, key: str = "", timeout: int = 600):
