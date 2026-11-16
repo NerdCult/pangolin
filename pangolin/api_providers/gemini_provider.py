@@ -43,7 +43,7 @@ class GeminiClient(Client):
         return [types.Tool(function_declarations=decls)]
 
     # converts TARecord.Parts to the format the Gemini API expects
-    def _record_to_parts(self, record: TARecord, call_names: dict) -> list[types.Part]:
+    def _message_to_gemini(self, record: TARecord, call_names: dict) -> list[types.Part]:
         if record.role == "tool":
             text = record.content[0].data.get("text", "") if record.content else ""
             return [types.Part(function_response=types.FunctionResponse(
@@ -69,7 +69,7 @@ class GeminiClient(Client):
                 continue
             for tc in m.tool_calls or []:
                 call_names[tc.id] = tc.name
-            parts = self._record_to_parts(m, call_names)
+            parts = self._message_to_gemini(m, call_names)
             if not parts:
                 continue
             role = ROLE_MAP[m.role]

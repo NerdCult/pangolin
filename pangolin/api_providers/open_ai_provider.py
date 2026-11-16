@@ -36,7 +36,7 @@ class OpenAIClient(Client):
             return {
                 "role": "tool",
                 "tool_call_id": message.tool_call_id,
-                "content": message.content[0].data.get("text", ""),
+                "content": message.content[0].data.get("text", "") if message.content else None,
             }
         result = {"role": message.role, "content": [self._part_to_openai(p) for p in message.content] if message.content else None}
         if message.tool_calls:

@@ -7,7 +7,7 @@ from openai import OpenAI
 def mock_openai_client():
     return OpenAIClient(OpenAI(base_url="dummy", api_key="dummy"), model_name="dummy")
 
-def test_openai_messages(mock_openai_client):
+def test_openai_message(mock_openai_client):
     part = Part(type='text', data={'text': 'pangolins are cool'})
 
     openai_part = mock_openai_client._part_to_openai(part)
@@ -31,10 +31,15 @@ def test_openai_messages(mock_openai_client):
 
     assert len(message_part) == 1
     assert 'type' in message_part[0].keys()
-    assert openai_part['type'] == 'text'
+    assert message_part[0]['type'] == 'text'
 
     assert 'text' in message_part[0].keys()
     assert message_part[0]['text'] == 'pangolins are cool'
+
+
+def test_openai_messages(mock_openai_client):
+    part = Part(type='text', data={'text': 'pangolins are cool'})
+    message = TARecord(role='user', content=[part])
 
     messages = [ TARecord(role='system', content=[Part(type='text', data={'text': 'you are an expert on pangolins'})]), 
                 message,
