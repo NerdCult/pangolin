@@ -1,3 +1,5 @@
+#Copyright (c) 2026 Gene B. Denney. All Rights Reserved.
+
 import pytest, json
 from pangolin import OpenAIClient
 from pangolin.messages import TARecord, Part, ToolCall

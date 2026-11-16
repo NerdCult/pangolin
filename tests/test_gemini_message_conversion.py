@@ -1,4 +1,6 @@
-import pytest, json
+#Copyright (c) 2026 Gene B. Denney. All Rights Reserved.
+
+import pytest
 from pangolin import GeminiClient
 from pangolin.messages import TARecord, Part, ToolCall
 from google import genai

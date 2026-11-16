@@ -1,3 +1,5 @@
+#Copyright (c) 2026 Gene B. Denney. All Rights Reserved.
+
 import pytest
 from pangolin.messages.ta_record import TARecord, Part, ToolCall
 from pangolin.utils.token_calculator import message_tokens

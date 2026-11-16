@@ -1,3 +1,5 @@
+#Copyright (c) 2026 Gene B. Denney. All Rights Reserved.
+
 import pytest
 from anthropic import Anthropic
 from pangolin import AnthropicClient
