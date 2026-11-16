@@ -1,4 +1,4 @@
-from tinyagent import gemini_agent_runtime, cli, AdvancedToolbox, BasicToolbox, AdvancedSkillManager, SimpleSkillManager, SQLiteMemoryManager
+from pangolin import gemini_agent_runtime, cli, AdvancedToolbox, BasicToolbox, AdvancedSkillManager, SimpleSkillManager, SQLiteMemoryManager
 from uuid import UUID, uuid4
 import logging
 

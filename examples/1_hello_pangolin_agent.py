@@ -1,6 +1,6 @@
 #Copyright (c) 2026 Gene B. Denney. All Rights Reserved.
 
-from tinyagent import openai_agent_runtime, cli
+from pangolin import openai_agent_runtime, cli
 
 #configure your connection
 

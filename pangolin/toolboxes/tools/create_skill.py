@@ -1,6 +1,6 @@
 #Copyright (c) 2026 Gene B. Denney. All Rights Reserved.
 
-from tinyagent.core.interfaces import SkillManagerSkillMaker
+from pangolin.core.interfaces import SkillManagerSkillMaker
 
 SCHEMA = {
     "name": "create_skill",
