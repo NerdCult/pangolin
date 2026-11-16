@@ -1,10 +1,11 @@
 #Copyright (c) 2026 Gene B. Denney. All Rights Reserved.
 
-from ..utils import create_openai_client, create_anthropic_client, create_gemini_client
+from ..utils import create_openai_client, create_anthropic_client, create_gemini_client, create_smoke_test_client
 from ..core.interfaces import MemoryManager, Toolbox, SkillManager
 from ..memory_managers import SimpleMemoryManager
 from ..api_aggregators import DefaultApiAggregator
 from . import DefaultAgentRuntime
+from ..messages import ApiEvent
 
 def openai_agent_runtime(url: str, 
                          model: str, 
@@ -70,3 +71,23 @@ def gemini_agent_runtime(
         max_tokens=max_tokens,
         max_rounds=max_rounds
     )
+
+
+def smoke_test_runtime( 
+                         system_prompt: str = '', 
+                         memory_manager: MemoryManager | None = None,
+                         skill_manager: SkillManager | None = None,
+                         toolbox: Toolbox | None = None,
+                         max_tokens: int = 32_000,
+                         max_rounds: int = 10,
+                         responses: list[ApiEvent] | None = None,
+                         **api_kwargs):
+    return DefaultAgentRuntime(
+            aggregator= DefaultApiAggregator(client=create_smoke_test_client(responses)),
+            system_prompt=system_prompt,
+            memory_manager=memory_manager or SimpleMemoryManager(),
+            skill_manager=skill_manager,
+            toolbox=toolbox,
+            max_tokens=max_tokens,
+            max_rounds=max_rounds
+        )
