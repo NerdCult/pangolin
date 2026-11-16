@@ -5,22 +5,22 @@
 Want to use it commercially, in a product, or at scale? No problem — just reach out. I'm happy to grant **free short-term evaluation licenses** to companies for testing and prototyping, and long-term licenses can be negotiated.
 
 ### Creators & Influencers
-If you're a YouTuber, TikToker, blogger, or anyone who makes tech content, feel free to build showcases, reviews, tutorials, or crazy demos with TinyAgent. Just point your viewers to the repo. I'll happily provide a free license if you want one for peace of mind.
+If you're a YouTuber, TikToker, blogger, or anyone who makes tech content, feel free to build showcases, reviews, tutorials, or crazy demos with Pangolin. Just point your viewers to the repo. I'll happily provide a free license if you want one for peace of mind.
 
 Email me at gbdenney84@gmail.com to inquire about a license (or open a GitHub issue).
 
 For full legal terms, see the [LICENSE](LICENSE) file. Commercial use or uses outside the license always requires explicit written approval from the copyright holder (Gene B. Denney).
 
 ## Introduction
-TinyAgent is a AI Agent library. Built to be functional out-of-the-box but completely extensible and customisable. Each component implements  Python Protocol class and each edge has an internal data class for normalization. The core object is the AgentRuntime. AgentRuntime manages recieving the user input, context building (chat history, system prompt, skills, and tools), the agent loop (api call, normalization, tool calls). 
+Pangolin is a AI Agent library. Built to be functional out-of-the-box but completely extensible and customisable. Each component implements  Python Protocol class and each edge has an internal data class for normalization. The core object is the AgentRuntime. AgentRuntime manages recieving the user input, context building (chat history, system prompt, skills, and tools), the agent loop (api call, normalization, tool calls). 
 
-## Quick Start: Hello TinyAgent
+## Quick Start: Hello Pangolin
 
 The sample below runs a simple command-line chat interface. 
 
 
 ```python
-from tinyagent import openai_agent_runtime, cli
+from pangolin import openai_agent_runtime, cli
 
 URL = 'https://api.openai.com/v1'   # or your preferred endpoint
 MODEL = 'gpt-4o-mini'               # or whatever you prefer
@@ -34,10 +34,10 @@ runtime = openai_agent_runtime(url=URL, model=MODEL, key=KEY)
 cli(runtime)
 ```
 
-1. Save this as `hello_tiny_agent.py`
+1. Save this as `hello_pangolin_agent.py` (also available in the examples folder)
 2. Update the URL, MODEL, and KEY
-3. (Optional) Swap `openai_agent_runtime` for `anthropic_agent_runtime` if preferred or use the 1_hello_tiny_agent_gemini.py from the examples folder.
-4. Run it: `python hello_tiny_agent.py`
+3. (Optional) Swap `openai_agent_runtime` for `anthropic_agent_runtime` if preferred or use the 1_hello_pangolin_gemini.py from the examples folder.
+4. Run it: `python hello_pangolin.py`
 
 When you see the `>>>` prompt, type your message and hit Enter.
 
@@ -58,7 +58,7 @@ When you see the `>>>` prompt, type your message and hit Enter.
 To copy the built-in tools and skills run this script (moves them into the current working directory in tools and skills folders or you can set your own target dir, set the same directory when initializing SkillManger and Toolbox):
 
 ```
-from tinyagent import copy_built_in_tools, copy_built_in_skills
+from pangolin import copy_built_in_tools, copy_built_in_skills
 
 copy_built_in_tools()
 copy_built_in_skills()
