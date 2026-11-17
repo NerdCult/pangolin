@@ -3,7 +3,7 @@
 from typing import Iterator
 import logging
 from ..core.interfaces import AgentRuntime, MemoryManager,SkillManager, Toolbox, ToolboxAdvanced, ApiAggregator
-from ..messages import TARecord, Part, AgentMessage
+from ..messages import TARecord, Part, AgentMessage, ToolCall
 from ..utils import count_tokens
 from ..memory_managers import SimpleMemoryManager
 
@@ -77,6 +77,23 @@ class DefaultAgentRuntime(AgentRuntime):
         ''' Get the list of tool schemas '''
         return self.toolbox.schemas() if self.toolbox else None
 
+    def _handle_tarecord_from_agent(self, agent_message: AgentMessage) ->  list[ToolCall]:
+                # if the ApiAggregator yields a message event add it to the context and check it for tool_calls
+                tool_calls = None
+                if agent_message.behavior == 'message':
+                    LOGGER.info(f'assistant message recieved: {agent_message.message}')
+                    self._add_context(agent_message.message)
+                    tool_calls = agent_message.message.tool_calls
+                # yield the AgentMessage to be processed for UI
+                return tool_calls
+
+    def _handle_tool_calls(self, tool_calls: list[ToolCall]) -> None:
+        LOGGER.info('making tool calls')
+        for result in self.toolbox.handle_tool_calls(tool_calls):
+            tar = TARecord(role='tool', content=[Part(type='text', data={'text': result.result})], tool_call_id=result.id)
+            LOGGER.debug(f'TOOL CALL RESULT {tar.to_json()}')
+            self._add_context(tar)
+         
     def handle_user_message(self, message: TARecord) -> Iterator[AgentMessage]:
         ''' Main entry point to start the agentic loop. '''
 
@@ -88,23 +105,11 @@ class DefaultAgentRuntime(AgentRuntime):
             tool_calls = None # initialzed to store tool calls 
 
             for agent_message in self.aggregator.process_context(context, self._tools()):
-                # if the ApiAggregator yields a message event add it to the context and check it for tool_calls
-                if agent_message.behavior == 'message':
-                    LOGGER.info(f'assistant message recieved: {agent_message.message}')
-                    self._add_context(agent_message.message)
-                    tool_calls = agent_message.message.tool_calls
-                # yield the AgentMessage to be processed for UI
+                tool_calls = self._handle_tarecord_from_agent(agent_message)
                 yield agent_message
 
             # if the stream ends with no tool calls the loop exits
-            if not tool_calls:
-                LOGGER.debug('no tool calls made')
+            if tool_calls and self.toolbox:
+                self._handle_tool_calls(tool_calls)
+            else:
                 break
-
-            # Check for a toolbox and handle tool calls. Should be no reason for tool calls to be made without a toolbox to provide available tools.
-            if self.toolbox:
-                LOGGER.info('making tool calls')
-                for result in self.toolbox.handle_tool_calls(tool_calls):
-                    tar = TARecord(role='tool', content=[Part(type='text', data={'text': result.result})], tool_call_id=result.id)
-                    LOGGER.debug(f'TOOL CALL RESULT {tar.to_json()}')
-                    self._add_context(tar)
