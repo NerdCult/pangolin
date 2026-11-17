@@ -17,6 +17,6 @@ def create_gemini_client(model: str, key: str, **api_kwargs):
     '''helper function to make a GeminiClient'''
     return GeminiProvider(key).make_client(model, **api_kwargs)
 
-def create_smoke_test_client(responses: list[ApiEvent] | None = None):
+def create_smoke_test_client(responses: list[ApiEvent] | None = None, show_system: bool = False, list_tools: bool = False):
     '''helper function to make a SmokeTestClient'''
-    return SmokeTestClient(responses if responses else DEFAULT_SMOKE_TEST_EVENTS)
+    return SmokeTestClient(responses if responses else DEFAULT_SMOKE_TEST_EVENTS, show_system, list_tools)

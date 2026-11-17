@@ -18,7 +18,8 @@ DEFAULT_SMOKE_TEST_EVENTS: list[ApiEvent] =[
     ApiEvent(event_type='thinking', content='nking'),
     ApiEvent(event_type='replying', content='i am r'),
     ApiEvent(event_type='replying', content='eplying'), 
-    ApiEvent(event_type='tool_call', tool_calls=[ToolCall(id='first tool call', name='get_utc_time', args={})]),
+    #ApiEvent(event_type='tool_call', tool_calls=[ToolCall(id='skill tool call', name='load_skill', args={'skill_name' : 'potato'})]), # use to test advanced toolbox and skill manager
+    ApiEvent(event_type='tool_call', tool_calls=[ToolCall(id='time tool call', name='get_utc_time', args={})]),
     ApiEvent(event_type='done', content='done'),
     ApiEvent(event_type='replying', content='i got '),  # reply to tool result in same round
     ApiEvent(event_type='replying', content='the ti'),
@@ -28,11 +29,21 @@ DEFAULT_SMOKE_TEST_EVENTS: list[ApiEvent] =[
 ]
 
 class SmokeTestClient(Client):
-    def __init__(self, responses: list[ApiEvent] = DEFAULT_SMOKE_TEST_EVENTS):
+    def __init__(self, responses: list[ApiEvent] = DEFAULT_SMOKE_TEST_EVENTS, show_system: bool = False, list_tools: bool = False):
         self.responses = copy.deepcopy(responses)
+        self.show_system = show_system
+        self.list_tools = list_tools
 
     def get_stream(self, messages, tools = None):
         LOGGER.info(f'SMOKE TEST RECEIVED {len(messages)} TARecords {len(tools) if tools else 0} tools')
+        print(f'SMOKE TEST RECEIVED {len(messages)} TARecords {len(tools) if tools else 0} tools')
+        if self.show_system and messages[0].role == 'system':
+            LOGGER.info(f'SYSTEM:\n{messages[0].content[0].data['text']}')
+            print (f'SYSTEM:\n{messages[0].content[0].data['text']}')
+
+        if self.list_tools and tools:
+            LOGGER.info(f'TOOLS:\n{tools}')
+            print(f'TOOLS:\n{tools}')
 
         while True:
             if len(self.responses) ==0:

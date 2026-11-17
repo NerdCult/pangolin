@@ -81,9 +81,11 @@ def smoke_test_runtime(
                          max_tokens: int = 32_000,
                          max_rounds: int = 10,
                          responses: list[ApiEvent] | None = None,
+                         show_system: bool = False,
+                         list_tools: bool = False,
                          **api_kwargs):
     return DefaultAgentRuntime(
-            aggregator= DefaultApiAggregator(client=create_smoke_test_client(responses)),
+            aggregator= DefaultApiAggregator(client=create_smoke_test_client(responses, show_system, list_tools)),
             system_prompt=system_prompt,
             memory_manager=memory_manager or SimpleMemoryManager(),
             skill_manager=skill_manager,
