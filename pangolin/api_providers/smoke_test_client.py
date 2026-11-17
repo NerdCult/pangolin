@@ -33,6 +33,10 @@ class SmokeTestClient(Client):
         LOGGER.info(f'SMOKE TEST RECEIVED {len(messages)} TARecords')
 
         while True:
+            if len(self.responses) ==0:
+                yield ApiEvent(event_type='replying', content='script exhausted')
+                yield ApiEvent(event_type='done', content='script exhausted')
+                break
             next_event = self.responses.pop(0)
 
             yield next_event
