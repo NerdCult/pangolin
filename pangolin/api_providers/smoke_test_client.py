@@ -13,16 +13,18 @@ DEFAULT_SMOKE_TEST_EVENTS: list[ApiEvent] =[
     ApiEvent(event_type='replying', content='i am r'),
     ApiEvent(event_type='replying', content='eplying'),
     ApiEvent(event_type='done', content='done'),
+    # end first round
     ApiEvent(event_type='thinking', content='i am thi'),
     ApiEvent(event_type='thinking', content='nking'),
     ApiEvent(event_type='replying', content='i am r'),
     ApiEvent(event_type='replying', content='eplying'), 
     ApiEvent(event_type='tool_call', tool_calls=[ToolCall(id='first tool call', name='get_utc_time', args={})]),
     ApiEvent(event_type='done', content='done'),
-    ApiEvent(event_type='replying', content='i got '),    
+    ApiEvent(event_type='replying', content='i got '),  # reply to tool result in same round
     ApiEvent(event_type='replying', content='the ti'),
     ApiEvent(event_type='replying', content='me'),
-    ApiEvent(event_type='done', content='done')
+    ApiEvent(event_type='done', content='done') 
+    # end second round, will yield script exahustion after this
 ]
 
 class SmokeTestClient(Client):
