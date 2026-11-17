@@ -11,7 +11,7 @@ LOGGER = logging.getLogger(__name__)
 DEFAULT_TOOLS_DIR = F'{os.path.dirname(__file__)}/tools'
 DEFAULT_MAX_RESULTS_LENGTH = 50_000
 
-#hard coded list based on the built-in TinyAgent tools
+#hard coded list based on the built-in Pangolin tools
 BASIC_TOOL_SET = ['browse_files',
                   'fetch_page',
                   'web_search',

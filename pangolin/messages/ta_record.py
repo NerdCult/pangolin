@@ -17,7 +17,7 @@ RoleType = Literal['system', 'user', 'assistant', 'tool']
 @dataclass
 class TARecord:
     '''
-    The Tiny Agent internal data class used to store interactions between user, assistant, system, and tool results.
+    The Pangolin internal data class used to store interactions between user, assistant, system, and tool results.
     '''
     role: RoleType
     content: list[Part] | None = None

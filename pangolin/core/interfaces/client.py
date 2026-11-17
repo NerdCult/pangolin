@@ -7,6 +7,6 @@ from ...messages.ta_record import TARecord
 @runtime_checkable 
 class Client(Protocol):
     ''' provides interaction with the api for chat completions. 
-        Must accept a list of Tiny Agent TARecords and convert to the expected api format.
-        Must return an Iterator of the Tiny Agent ApiEvent'''
+        Must accept a list of Pangolin TARecords and convert to the expected api format.
+        Must return an Iterator of the Pangolin ApiEvent'''
     def get_stream(self, messages: list[TARecord], tools: list[dict] | None = None) -> Iterator[ApiEvent]: ...

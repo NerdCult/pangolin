@@ -14,7 +14,7 @@ class AdvancedToolbox(ToolboxAdvanced):
     ''' 
     Implements ToolboxAdvanced which allows it to create new tools if a create_tool tool is present.
     The default tools_dir is the current working directory + /tools when the toolbox initiallizes.
-    tinyagent.copy_built_in_tools() will copy the built in tools to the current working directory + /tools.
+    pangolin.copy_built_in_tools() will copy the built in tools to the current working directory + /tools.
     '''
     def __init__(self, tools_folder: str = f'{os.getcwd()}/tools', max_results_length: int = DEFAULT_MAX_RESULTS_LENGTH):
         '''
