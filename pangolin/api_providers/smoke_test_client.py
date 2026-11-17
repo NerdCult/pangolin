@@ -30,7 +30,7 @@ class SmokeTestClient(Client):
         self.responses = copy.deepcopy(responses)
 
     def get_stream(self, messages, tools = None):
-        LOGGER.info(f'SMOKE TEST RECEIVED {len(messages)} TARecords')
+        LOGGER.info(f'SMOKE TEST RECEIVED {len(messages)} TARecords {len(tools) if tools else 0} tools')
 
         while True:
             if len(self.responses) ==0:
