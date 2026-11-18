@@ -1,8 +1,8 @@
 #Copyright (c) 2026 Gene B. Denney. All Rights Reserved.
 
-import json, logging, copy
-from typing import Iterator
-from ..core.interfaces import Provider, Client
+import json, logging, copy, asyncio
+from typing import Iterator, Protocol
+from ..core.interfaces import Provider, Client, ClientAsync
 from ..messages import TARecord, Part, ApiEvent, ToolCall
 
 LOGGER = logging.getLogger(__name__)
@@ -28,7 +28,7 @@ DEFAULT_SMOKE_TEST_EVENTS: list[ApiEvent] =[
     # end second round, will yield script exahustion after this
 ]
 
-class SmokeTestClient(Client):
+class SmokeTestClient(Client, ClientAsync, Protocol):
     def __init__(self, responses: list[ApiEvent] = DEFAULT_SMOKE_TEST_EVENTS, show_system: bool = False, list_tools: bool = False):
         self.responses = copy.deepcopy(responses)
         self.show_system = show_system
@@ -46,6 +46,31 @@ class SmokeTestClient(Client):
             print(f'TOOLS:\n{tools}')
 
         while True:
+            if len(self.responses) ==0:
+                yield ApiEvent(event_type='replying', content='script exhausted')
+                yield ApiEvent(event_type='done', content='script exhausted')
+                break
+            next_event = self.responses.pop(0)
+
+            yield next_event
+
+            if next_event.event_type == 'done':
+                break
+
+
+    async def get_stream_async(self, messages, tools = None):
+        LOGGER.info(f'SMOKE TEST RECEIVED {len(messages)} TARecords {len(tools) if tools else 0} tools')
+        print(f'SMOKE TEST RECEIVED {len(messages)} TARecords {len(tools) if tools else 0} tools')
+        if self.show_system and messages[0].role == 'system':
+            LOGGER.info(f'SYSTEM:\n{messages[0].content[0].data['text']}')
+            print (f'SYSTEM:\n{messages[0].content[0].data['text']}')
+
+        if self.list_tools and tools:
+            LOGGER.info(f'TOOLS:\n{tools}')
+            print(f'TOOLS:\n{tools}')
+
+        while True:
+            await asyncio.sleep(1)
             if len(self.responses) ==0:
                 yield ApiEvent(event_type='replying', content='script exhausted')
                 yield ApiEvent(event_type='done', content='script exhausted')

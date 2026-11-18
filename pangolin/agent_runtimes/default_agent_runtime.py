@@ -1,9 +1,9 @@
 #Copyright (c) 2026 Gene B. Denney. All Rights Reserved.
 
-from typing import Iterator
-import logging
-from ..core.interfaces import AgentRuntime, MemoryManager,SkillManager, Toolbox, ToolboxAdvanced, ApiAggregator
-from ..messages import TARecord, Part, AgentMessage
+from typing import Iterator, AsyncGenerator
+import logging, asyncio, threading
+from ..core.interfaces import AgentRuntime, MemoryManager,SkillManager, Toolbox, ToolboxAdvanced, ApiAggregator, ApiAggregatorAsync
+from ..messages import TARecord, Part, AgentMessage, ToolCall
 from ..utils import count_tokens
 from ..memory_managers import SimpleMemoryManager
 
@@ -77,10 +77,27 @@ class DefaultAgentRuntime(AgentRuntime):
         ''' Get the list of tool schemas '''
         return self.toolbox.schemas() if self.toolbox else None
 
+    def _handle_tarecord_from_agent(self, agent_message: AgentMessage) ->  list[ToolCall]:
+                # if the ApiAggregator yields a message event add it to the context and check it for tool_calls
+                tool_calls = None
+                if agent_message.behavior == 'message':
+                    LOGGER.info(f'assistant message recieved: {agent_message.message}')
+                    self._add_context(agent_message.message)
+                    tool_calls = agent_message.message.tool_calls
+                # yield the AgentMessage to be processed for UI
+                return tool_calls
+
+    def _handle_tool_calls(self, tool_calls: list[ToolCall]) -> None:
+        LOGGER.info('making tool calls')
+        for result in self.toolbox.handle_tool_calls(tool_calls):
+            tar = TARecord(role='tool', content=[Part(type='text', data={'text': result.result})], tool_call_id=result.id)
+            LOGGER.debug(f'TOOL CALL RESULT {tar.to_json()}')
+            self._add_context(tar)
+         
     def handle_user_message(self, message: TARecord) -> Iterator[AgentMessage]:
         ''' Main entry point to start the agentic loop. '''
 
-        LOGGER.info(f'user massage recieved: {message.to_json()}')
+        LOGGER.info(f'user message recieved: {message.to_json()}')
 
         self._add_context(message)
         for _ in range(self.max_rounds):
@@ -88,23 +105,74 @@ class DefaultAgentRuntime(AgentRuntime):
             tool_calls = None # initialzed to store tool calls 
 
             for agent_message in self.aggregator.process_context(context, self._tools()):
-                # if the ApiAggregator yields a message event add it to the context and check it for tool_calls
-                if agent_message.behavior == 'message':
-                    LOGGER.info(f'assistant message recieved: {agent_message.message}')
-                    self._add_context(agent_message.message)
-                    tool_calls = agent_message.message.tool_calls
-                # yield the AgentMessage to be processed for UI
+                tool_calls = self._handle_tarecord_from_agent(agent_message)
                 yield agent_message
 
             # if the stream ends with no tool calls the loop exits
-            if not tool_calls:
-                LOGGER.debug('no tool calls made')
+            if tool_calls and self.toolbox:
+                self._handle_tool_calls(tool_calls)
+            else:
                 break
+    
+    async def handle_user_message_async(self, message: TARecord) -> AsyncGenerator[AgentMessage]:
+        ''' Main entry point to start the agentic loop. '''
+        if not isinstance(self.aggregator, ApiAggregatorAsync):
+            raise TypeError('Aggregator does not implement ApiAggregatorAsync')
+        LOGGER.info(f'user message recieved: {message.to_json()}')
+    
+        self._add_context(message)
+        for _ in range(self.max_rounds):
+            context = self._get_context() # get the context to send to the api
+            tool_calls = None # initialzed to store tool calls 
+    
+            async for agent_message in self.aggregator.process_context_async(context, self._tools()):
+                tool_calls = self._handle_tarecord_from_agent(agent_message)
+                yield agent_message
+    
+            # if the stream ends with no tool calls the loop exits
+            if tool_calls and self.toolbox:
+                self._handle_tool_calls(tool_calls)
+            else:
+                break
+        
+    async def handle_user_message_to_queue(self, message: TARecord, 
+                             queue: asyncio.Queue[AgentMessage | None], 
+                             stop: threading.Event = threading.Event(),
+                             done: threading.Event = threading.Event()):
+        ''' To ansycio.Queue entry point to start the agentic loop. '''
+        if not isinstance(self.aggregator, ApiAggregatorAsync):
+            LOGGER.warning('aggregator does not implement ApiAggregatorAsync')
+            raise TypeError('aggregator does not implement ApiAggregatorAsync')
 
-            # Check for a toolbox and handle tool calls. Should be no reason for tool calls to be made without a toolbox to provide available tools.
-            if self.toolbox:
-                LOGGER.info('making tool calls')
-                for result in self.toolbox.handle_tool_calls(tool_calls):
-                    tar = TARecord(role='tool', content=[Part(type='text', data={'text': result.result})], tool_call_id=result.id)
-                    LOGGER.debug(f'TOOL CALL RESULT {tar.to_json()}')
-                    self._add_context(tar)
+        LOGGER.info(f'user massege recieved: {message.to_json()}')
+
+        async def task_done():
+            await queue.put(None)
+            done.set()
+
+        self._add_context(message)
+
+        try:
+            for _ in range(self.max_rounds):
+                context = self._get_context() # get the context to send to the api
+                tool_calls = None # initialzed to store tool calls 
+
+                async for agent_message in self.aggregator.process_context_async(context, self._tools()):
+                    tool_calls = self._handle_tarecord_from_agent(agent_message)
+                    await queue.put(agent_message)
+
+                    if stop.is_set(): 
+                        break
+
+                # if the stream ends with no tool calls the loop exits
+                if tool_calls and self.toolbox:
+                    self._handle_tool_calls(tool_calls)
+                else:
+                    await task_done()
+                    break
+
+                if stop.is_set(): 
+                    await task_done()
+                    break
+        except BaseException as e:
+            await queue.put(AgentMessage(behavior='error', content=e))

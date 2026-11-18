@@ -1,10 +1,10 @@
 #Copyright (c) 2026 Gene B. Denney. All Rights Reserved.
 
 import logging, uuid, base64
-from typing import Iterator
+from typing import Iterator, Protocol, AsyncGenerator
 from google import genai
 from google.genai import types
-from ..core.interfaces import Provider, Client
+from ..core.interfaces import Provider, Client, ClientAsync
 from ..messages import TARecord, ApiEvent, ToolCall
 
 LOGGER = logging.getLogger(__name__)
@@ -14,7 +14,7 @@ DUMMY_SIGNATURE = b"skip_thought_signature_validator"
 # Gemini only knows 'user' and 'model'. Tool results go back as 'user'.
 ROLE_MAP = {"user": "user", "assistant": "model", "tool": "user"}
 
-class GeminiClient(Client):
+class GeminiClient(Client, ClientAsync, Protocol):
     def __init__(self, client: genai.Client, model_name: str, **api_kwargs):
         '''
         client: a google.genai.Client 
@@ -80,22 +80,10 @@ class GeminiClient(Client):
                 contents.append(types.Content(role=role, parts=parts))
         return ("\n\n".join(system) or None), contents
 
-    def get_stream(self, messages: list[TARecord], tools: list[dict] | None = None) -> Iterator[ApiEvent]:
-        ''' Sets the config with types.GenerateContentConfig() and calls models.generate_content(stream) converting the stream of GenerateContentResponse to ApiEvents '''
-        system, contents = self._messages_to_gemini(messages)
-        LOGGER.info(f'get_stream with {len(contents)} contents and {len(tools) if tools else 0} tools')
-        config = types.GenerateContentConfig(
-            system_instruction=system,
-            tools=self._tools_to_gemini(tools),
-            **self.api_kwargs
-        )
-
-        calls, finish = [], None
-        for chunk in self.client.models.generate_content_stream(
-                model=self.model_name, contents=contents, config=config):
-            if not chunk.candidates:
-                continue
+    def _process_chunk(self, chunk, calls: list, finish: ApiEvent):
             cand = chunk.candidates[0]
+            if cand.finish_reason:
+                finish.content = cand.finish_reason
             for part in (cand.content.parts or []) if cand.content else []:
                 if part.function_call:
                     fc = part.function_call
@@ -106,15 +94,56 @@ class GeminiClient(Client):
                     # convert the thought_signature for easier handling internally
                     thought_signature=base64.b64encode(part.thought_signature).decode() if part.thought_signature else None))
                 elif part.text:
-                    yield ApiEvent(event_type="thinking" if part.thought else "replying",
+                    return ApiEvent(event_type="thinking" if part.thought else "replying",
                                    content=part.text)
-            if cand.finish_reason:
-                finish = cand.finish_reason
+
+    def get_stream(self, messages: list[TARecord], tools: list[dict] | None = None) -> Iterator[ApiEvent]:
+        ''' Sets the config with types.GenerateContentConfig() and calls models.generate_content(stream) converting the stream of GenerateContentResponse to ApiEvents '''
+        system, contents = self._messages_to_gemini(messages)
+        LOGGER.info(f'get_stream with {len(contents)} contents and {len(tools) if tools else 0} tools')
+        config = types.GenerateContentConfig(
+            system_instruction=system,
+            tools=self._tools_to_gemini(tools),
+            **self.api_kwargs
+        )
+
+        calls, finish_event = [], ApiEvent(event_type='done')
+        for chunk in self.client.models.generate_content_stream(
+                model=self.model_name, contents=contents, config=config):
+            if not chunk.candidates:
+                continue
+            api_event = self._process_chunk(chunk, calls, finish_event)
+            if api_event:
+                yield api_event
 
         if calls:
             LOGGER.info(f'tool calls: {calls}')
             yield ApiEvent(event_type="tool_call", tool_calls=calls)
-        yield ApiEvent(event_type="done", content=getattr(finish, "name", str(finish)))
+        yield finish_event
+
+    async def get_stream_async(self, messages: list[TARecord], tools: list[dict] | None = None) -> AsyncGenerator[ApiEvent]:
+        ''' Sets the config with types.GenerateContentConfig() and calls models.generate_content(stream) converting the stream of GenerateContentResponse to ApiEvents '''
+        system, contents = self._messages_to_gemini(messages)
+        LOGGER.info(f'get_stream with {len(contents)} contents and {len(tools) if tools else 0} tools')
+        config = types.GenerateContentConfig(
+            system_instruction=system,
+            tools=self._tools_to_gemini(tools),
+            **self.api_kwargs
+        )
+
+        calls, finish_event = [], ApiEvent(event_type='done')
+        response = await self.client.aio.models.generate_content_stream(model=self.model_name, contents=contents, config=config)
+        async for chunk in response:
+            if not chunk.candidates:
+                continue
+            api_event = self._process_chunk(chunk, calls, finish_event)
+            if api_event:
+                yield api_event
+
+        if calls:
+            LOGGER.info(f'tool calls: {calls}')
+            yield ApiEvent(event_type="tool_call", tool_calls=calls)
+        yield finish_event
 
 
 class GeminiProvider(Provider):

@@ -1,14 +1,14 @@
 #Copyright (c) 2026 Gene B. Denney. All Rights Reserved.
 
-from openai import OpenAI
+from openai import OpenAI, AsyncOpenAI
 import json, logging
-from typing import Iterator
-from ..core.interfaces import Provider, Client
+from typing import Iterator, Protocol
+from ..core.interfaces import Provider, Client, ClientAsync
 from ..messages import TARecord, Part, ApiEvent, ToolCall
 
 LOGGER = logging.getLogger(__name__)
 
-class OpenAIClient(Client):
+class OpenAIClient(Client, ClientAsync, Protocol):
     def __init__(self, connection: OpenAI, model_name: str, **api_kwargs):
         '''
         connection: openai.OpenAI instance
@@ -17,6 +17,7 @@ class OpenAIClient(Client):
         '''
         LOGGER.info(f'__init__: {connection} {model_name}')
         self.connection = connection
+        self.connection_async = AsyncOpenAI(api_key= self.connection.api_key, base_url=self.connection.base_url)
         self.model_name = model_name
         self.api_kwargs =  api_kwargs
 
@@ -49,6 +50,52 @@ class OpenAIClient(Client):
         for m in messages:
             openai_messages.append(self._message_to_openai(m))
         return openai_messages
+
+    def _process_chunk(self, chunk, calls, raw_args):
+                delta = chunk.choices[0].delta
+                finish_reason = chunk.choices[0].finish_reason
+        
+                extra = getattr(delta, "model_extra", None) or {}
+                rtext = getattr(delta, "reasoning_content", None) or extra.get  ("reasoning_content") or extra.get ("reasoning")
+        
+                if rtext:
+                    LOGGER.debug(f'thinking: {rtext}')
+                    return ApiEvent(
+                        event_type="thinking",
+                        content=rtext
+                     )
+        
+                if delta.content:
+                    LOGGER.debug(f'replying {delta.content}')
+                    return ApiEvent(
+                        event_type="replying",
+                        content=delta.content
+                    )
+        
+                for call in delta.tool_calls or []:
+                    idx = call.index
+                    if call.id:
+                        calls.setdefault(idx, ToolCall(id=call.id, name="", args={})).id = call.id
+                    if call.function:
+                        if call.function.name:
+                            calls.setdefault(idx, ToolCall(id=call.id, name="", args={})).name = call.function.name
+                        if call.function.arguments:
+                            raw_args[idx] = raw_args.get(idx, "") + call.function.arguments
+        
+                if finish_reason:
+                    LOGGER.debug('round complete')
+                    return ApiEvent(event_type='done', content=finish_reason)
+
+    def _process_tool(self, calls, raw_args):
+            for idx, c in calls.items():
+                s = raw_args.get(idx, "").strip()
+                try:
+                    c.args = json.loads(s) if s else {}
+                except json.JSONDecodeError:
+                    c.args = {}   # or keep raw string if you want to be permissive
+            LOGGER.info(f'tool calls: {calls}')
+            return ApiEvent(event_type="tool_call", tool_calls=list(calls.values()))
+
     
     def get_stream(self, messages: list[TARecord], tools: list[dict] | None = None) -> Iterator[ApiEvent]:
         '''
@@ -64,56 +111,45 @@ class OpenAIClient(Client):
 
         calls = {}
         raw_args = {}
-        surragate_call_indeces = {}
-        surragate_call_index = 0
+
         for chunk in stream:
             if not chunk.choices:
                 continue
-            
-            delta = chunk.choices[0].delta
-            finish_reason = chunk.choices[0].finish_reason
-
-            extra = getattr(delta, "model_extra", None) or {}
-            rtext = getattr(delta, "reasoning_content", None) or extra.get  ("reasoning_content") or extra.get ("reasoning")
-
-            if rtext:
-                LOGGER.debug(f'thinking: {rtext}')
-                yield ApiEvent(
-                    event_type="thinking",
-                    content=rtext
-                 )
-
-            if delta.content:
-                LOGGER.debug(f'replying {delta.content}')
-                yield ApiEvent(
-                    event_type="replying",
-                    content=delta.content
-                )
-
-            for call in delta.tool_calls or []:
-                idx = call.index
-                if call.id:
-                    calls.setdefault(idx, ToolCall(id=call.id, name="", args={})).id = call.id
-                if call.function:
-                    if call.function.name:
-                        calls.setdefault(idx, ToolCall(id=call.id, name="", args={})).name = call.function.name
-                    if call.function.arguments:
-                        raw_args[idx] = raw_args.get(idx, "") + call.function.arguments
-
-            if finish_reason:
-                LOGGER.debug('round complete')
-                yield ApiEvent(event_type='done', content=finish_reason)
-                break
+            api_event = self._process_chunk(chunk, calls, raw_args)
+            if api_event:
+                yield api_event
+                if api_event.event_type == 'done':
+                    break
             
         if calls:
-            for idx, c in calls.items():
-                s = raw_args.get(idx, "").strip()
-                try:
-                    c.args = json.loads(s) if s else {}
-                except json.JSONDecodeError:
-                    c.args = {}   # or keep raw string if you want to be permissive
-            LOGGER.info(f'tool calls: {calls}')
-            yield ApiEvent(event_type="tool_call", tool_calls=list(calls.values()))        
+            yield self._process_tool(calls, raw_args)
+    
+    async def get_stream_async(self, messages, tools = None):
+        '''
+        Calls chat.completeion.create() on the async OpenAI client, yields the chunks as ApiEvents
+        '''
+        LOGGER.info(f'get_stream with {len(messages)} records and {len(tools) if tools else '0'} tools')
+        stream = await self.connection_async.chat.completions.create(
+            model=self.model_name, 
+            messages=self._messages_to_openai(messages),
+            tools=tools,
+            stream=True,
+            **self.api_kwargs)
+
+        calls = {}
+        raw_args = {}
+    
+        async for chunk in stream:
+            if not chunk.choices:
+                continue
+            api_event = self._process_chunk(chunk, calls, raw_args)
+            if api_event:
+                yield api_event
+                if api_event.event_type == 'done':
+                    break
+            
+        if calls:
+            yield self._process_tool(calls, raw_args)
 
 class OpenAIProvider(Provider):
     def __init__(self, url: str, key: str = "", timeout: int = 600):
