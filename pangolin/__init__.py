@@ -1,6 +1,6 @@
 #Copyright (c) 2026 Gene B. Denney. All Rights Reserved.
 
-from .cli import cli
+from .cli import cli, cli_queue
 from .api_providers import  OpenAIProvider, OpenAIClient, AnthropicProvider, AnthropicClient, GeminiProvider, GeminiClient
 from .agent_runtimes import DefaultAgentRuntime
 from .toolboxes import BasicToolbox, AdvancedToolbox
@@ -13,6 +13,7 @@ from .memory_managers import SQLiteMemoryManager, SimpleMemoryManager
 
 __all__ = [
     'cli',
+    'cli_queue',
     'create_openai_client', 
     'openai_agent_runtime',
     'create_anthropic_client', 

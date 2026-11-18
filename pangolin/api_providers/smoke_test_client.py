@@ -1,8 +1,8 @@
 #Copyright (c) 2026 Gene B. Denney. All Rights Reserved.
 
 import json, logging, copy, asyncio
-from typing import Iterator
-from ..core.interfaces import Provider, Client
+from typing import Iterator, Protocol
+from ..core.interfaces import Provider, Client, ClientAsync
 from ..messages import TARecord, Part, ApiEvent, ToolCall
 
 LOGGER = logging.getLogger(__name__)
@@ -28,7 +28,7 @@ DEFAULT_SMOKE_TEST_EVENTS: list[ApiEvent] =[
     # end second round, will yield script exahustion after this
 ]
 
-class SmokeTestClient(Client):
+class SmokeTestClient(Client, ClientAsync, Protocol):
     def __init__(self, responses: list[ApiEvent] = DEFAULT_SMOKE_TEST_EVENTS, show_system: bool = False, list_tools: bool = False):
         self.responses = copy.deepcopy(responses)
         self.show_system = show_system
@@ -70,7 +70,7 @@ class SmokeTestClient(Client):
             print(f'TOOLS:\n{tools}')
 
         while True:
-            asyncio.sleep(1)
+            await asyncio.sleep(1)
             if len(self.responses) ==0:
                 yield ApiEvent(event_type='replying', content='script exhausted')
                 yield ApiEvent(event_type='done', content='script exhausted')

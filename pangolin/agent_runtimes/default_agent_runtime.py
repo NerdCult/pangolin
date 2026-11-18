@@ -114,7 +114,7 @@ class DefaultAgentRuntime(AgentRuntime):
             else:
                 break
     
-    def handle_user_message_to_queue(self, message: TARecord, 
+    async def handle_user_message_to_queue(self, message: TARecord, 
                              queue: asyncio.Queue[AgentMessage | None], 
                              stop: threading.Event = threading.Event(),
                              done: threading.Event = threading.Event()):
@@ -130,24 +130,28 @@ class DefaultAgentRuntime(AgentRuntime):
             done.set()
 
         self._add_context(message)
-        for _ in range(self.max_rounds):
-            context = self._get_context() # get the context to send to the api
-            tool_calls = None # initialzed to store tool calls 
 
-            async for agent_message in self.aggregator.process_context_async(context, self._tools()):
-                tool_calls = self._handle_tarecord_from_agent(agent_message)
-                await queue.put(agent_message)
+        try:
+            for _ in range(self.max_rounds):
+                context = self._get_context() # get the context to send to the api
+                tool_calls = None # initialzed to store tool calls 
 
-                if stop.is_set(): 
+                async for agent_message in self.aggregator.process_context_async(context, self._tools()):
+                    tool_calls = self._handle_tarecord_from_agent(agent_message)
+                    await queue.put(agent_message)
+
+                    if stop.is_set(): 
+                        break
+
+                # if the stream ends with no tool calls the loop exits
+                if tool_calls and self.toolbox:
+                    self._handle_tool_calls(tool_calls)
+                else:
+                    await task_done()
                     break
 
-            # if the stream ends with no tool calls the loop exits
-            if tool_calls and self.toolbox:
-                self._handle_tool_calls(tool_calls)
-            else:
-                await task_done()
-                break
-
-            if stop.is_set(): 
-                await task_done()
-                break
+                if stop.is_set(): 
+                    await task_done()
+                    break
+        except BaseException as e:
+            await queue.put(AgentMessage(behavior='error', content=e))

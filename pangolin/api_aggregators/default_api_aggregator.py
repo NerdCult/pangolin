@@ -1,8 +1,9 @@
 #Copyright (c) 2026 Gene B. Denney. All Rights Reserved.
 
 import logging
+from typing import Iterator
 from ..messages import TARecord, Part, AgentMessage, ToolCall, assistant_record, ApiEvent
-from ..core.interfaces import Client, ApiAggregator
+from ..core.interfaces import Client, ClientAsync, ApiAggregator
 
 LOGGER = logging.getLogger(__name__)
 
@@ -11,22 +12,22 @@ class DefaultApiAggregator(ApiAggregator):
         LOGGER.info(f'__init__: {client}')
         self.client: Client = client
 
-    def _handle_api_event(self, event: ApiEvent):
+    def _handle_api_event(self, event: ApiEvent) -> AgentMessage:
         if event.event_type == "thinking":
-            yield AgentMessage(behavior= 'thinking', content= event.content)
+            return AgentMessage(behavior= 'thinking', content= event.content)
 
         # the LLM responses are consolidated as they come in so a complete TARecord content can beoutput after the stream ends
         if event.event_type == "replying":
-            yield AgentMessage(behavior='replying', content= event.content)
+            return AgentMessage(behavior='replying', content= event.content)
             content = content + event.content
 
         # Tool calls are assembled in the api_provider.Client implementation and can be API specific
         if event.event_type == "tool_call":
             tool_calls = event.tool_calls
-            yield AgentMessage(behavior='tool_calls', content=tool_calls)
+            return AgentMessage(behavior='tool_calls', content=tool_calls)
 
         if event.event_type  == "done":
-            yield AgentMessage( behavior= 'done', content= event.content)
+            return AgentMessage( behavior= 'done', content= event.content)
 
     def process_context(self, context: list[TARecord], tools: list[dict]):
             LOGGER.info(f'processing context with {len(context)} records and {len(tools) if tools else '0'} tools')
@@ -43,6 +44,8 @@ class DefaultApiAggregator(ApiAggregator):
 
     async def process_context_async(self, context: list[TARecord], tools: list[dict]):
             LOGGER.info(f'processing context with {len(context)} records and {len(tools) if tools else '0'} tools')
+            if not isinstance(self.client, ClientAsync):
+                 raise TypeError('Client does not implement ClientAsync')
             content = ""
             tool_calls = None
 

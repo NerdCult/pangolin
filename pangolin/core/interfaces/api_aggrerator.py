@@ -1,9 +1,10 @@
 #Copyright (c) 2026 Gene B. Denney. All Rights Reserved.
 
-from typing import Protocol, Iterator, AsyncGenerator
+from typing import Protocol, Iterator, AsyncGenerator, runtime_checkable
 
 from ...messages import TARecord, AgentMessage
 
+@runtime_checkable
 class ApiAggregator(Protocol):
     '''
     recieves the context and tools schems from the AgentRuntime, passes to the API Client, and handles the returned ApiEvents; 
@@ -12,7 +13,7 @@ class ApiAggregator(Protocol):
     '''
     def process_context(self, context: list[TARecord]) -> Iterator[AgentMessage]: ...
 
-
+@runtime_checkable
 class ApiAggregatorAsync(Protocol):
     '''
     recieves the context and tools schems from the AgentRuntime, passes to the API Client, and handles the returned ApiEvents; 
