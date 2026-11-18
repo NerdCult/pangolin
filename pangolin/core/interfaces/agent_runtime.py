@@ -1,6 +1,7 @@
 #Copyright (c) 2026 Gene B. Denney. All Rights Reserved.
 
-from typing import Protocol, Iterator
+import asyncio, threading
+from typing import Protocol, Iterator, AsyncGenerator
 from ...messages import TARecord, AgentMessage
 
 class AgentRuntime(Protocol):
@@ -10,3 +11,15 @@ class AgentRuntime(Protocol):
     routes steps between the different components.
     '''
     def handle_user_message(self, message: TARecord) -> Iterator[AgentMessage]: ...
+
+
+class AgentRuntimeTopQueue(Protocol):
+    '''
+    The central orchestration class and entry point for running inference.
+    manages the ApiAggregator, SkillsManager, Toolbox, and Memory Manager
+    routes steps between the different components.
+    '''
+    def handle_user_message_to_queue(self, message: TARecord, 
+                             queue: asyncio.Queue[AgentMessage | None], 
+                             stop: threading.Event = threading.Event(),
+                             done: threading.Event = threading.Event()): ...

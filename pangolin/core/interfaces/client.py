@@ -10,3 +10,10 @@ class Client(Protocol):
         Must accept a list of Pangolin TARecords and convert to the expected api format.
         Must return an Iterator of the Pangolin ApiEvent'''
     def get_stream(self, messages: list[TARecord], tools: list[dict] | None = None) -> Iterator[ApiEvent]: ...
+
+@runtime_checkable 
+class ClientAsync(Protocol):
+    ''' provides interaction with the api for chat completions. 
+        Must accept a list of Pangolin TARecords and convert to the expected api format.
+        Must return an Iterator of the Pangolin ApiEvent'''
+    def get_stream_async(self, messages: list[TARecord], tools: list[dict] | None = None) -> Iterator[ApiEvent]: ...

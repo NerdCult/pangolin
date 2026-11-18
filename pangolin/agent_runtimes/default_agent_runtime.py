@@ -1,8 +1,8 @@
 #Copyright (c) 2026 Gene B. Denney. All Rights Reserved.
 
-from typing import Iterator
-import logging
-from ..core.interfaces import AgentRuntime, MemoryManager,SkillManager, Toolbox, ToolboxAdvanced, ApiAggregator
+from typing import Iterator, AsyncGenerator
+import logging, asyncio, threading
+from ..core.interfaces import AgentRuntime, MemoryManager,SkillManager, Toolbox, ToolboxAdvanced, ApiAggregator, ApiAggregatorAsync
 from ..messages import TARecord, Part, AgentMessage, ToolCall
 from ..utils import count_tokens
 from ..memory_managers import SimpleMemoryManager
@@ -97,7 +97,7 @@ class DefaultAgentRuntime(AgentRuntime):
     def handle_user_message(self, message: TARecord) -> Iterator[AgentMessage]:
         ''' Main entry point to start the agentic loop. '''
 
-        LOGGER.info(f'user massage recieved: {message.to_json()}')
+        LOGGER.info(f'user message recieved: {message.to_json()}')
 
         self._add_context(message)
         for _ in range(self.max_rounds):
@@ -112,4 +112,42 @@ class DefaultAgentRuntime(AgentRuntime):
             if tool_calls and self.toolbox:
                 self._handle_tool_calls(tool_calls)
             else:
+                break
+    
+    def handle_user_message_to_queue(self, message: TARecord, 
+                             queue: asyncio.Queue[AgentMessage | None], 
+                             stop: threading.Event = threading.Event(),
+                             done: threading.Event = threading.Event()):
+        ''' To ansycio.Queue entry point to start the agentic loop. '''
+        if not isinstance(self.aggregator, ApiAggregatorAsync):
+            LOGGER.warning('aggregator does not implement ApiAggregatorAsync')
+            raise TypeError('aggregator does not implement ApiAggregatorAsync')
+
+        LOGGER.info(f'user massege recieved: {message.to_json()}')
+
+        async def task_done():
+            await queue.put(None)
+            done.set()
+
+        self._add_context(message)
+        for _ in range(self.max_rounds):
+            context = self._get_context() # get the context to send to the api
+            tool_calls = None # initialzed to store tool calls 
+
+            async for agent_message in self.aggregator.process_context_async(context, self._tools()):
+                tool_calls = self._handle_tarecord_from_agent(agent_message)
+                await queue.put(agent_message)
+
+                if stop.is_set(): 
+                    break
+
+            # if the stream ends with no tool calls the loop exits
+            if tool_calls and self.toolbox:
+                self._handle_tool_calls(tool_calls)
+            else:
+                await task_done()
+                break
+
+            if stop.is_set(): 
+                await task_done()
                 break
