@@ -1,8 +1,9 @@
 #Copyright (c) 2026 Gene B. Denney. All Rights Reserved.
 
 import logging
-from ..messages import TARecord, AgentMessage, ApiEvent
+from ..messages import TARecord, AgentMessage, ApiEvent, Part
 from ..core.interfaces import Client, ClientAsync, ApiAggregator
+from ..core.exceptions import PangolinTypeError
 
 LOGGER = logging.getLogger(__name__)
 
@@ -38,13 +39,13 @@ class DefaultApiAggregator(ApiAggregator):
         for event in self.client.get_stream(context, tools):
             yield self._handle_api_event(event, tool_calls)
 
-        yield AgentMessage(behavior='message', message=TARecord(role='assistant', content=[Par(type='text', data={'text': content})] if content else None, tool_calls=tool_calls))
+        yield AgentMessage(behavior='message', message=TARecord(role='assistant', content=[Part(type='text', data={'text': content})] if content else None, tool_calls=tool_calls))
 
 
     async def process_context_async(self, context: list[TARecord], tools: list[dict]):
         LOGGER.info(f'processing context with {len(context)} records and {len(tools) if tools else '0'}tools')
         if not isinstance(self.client, ClientAsync):
-             raise TypeError('Client does not implement ClientAsync')
+             raise PangolinTypeError('Client does not implement ClientAsync')
         content = ""
         tool_calls = None
 
@@ -53,4 +54,4 @@ class DefaultApiAggregator(ApiAggregator):
         async for event in self.client.get_stream_async(context, tools):
             yield self._handle_api_event(event)
 
-        yield AgentMessage(behavior='message', message=TARecord(role='assistant', content=[Par(type='text', data={'text': content})] if content else None, tool_calls=tool_calls))
+        yield AgentMessage(behavior='message', message=TARecord(role='assistant', content=[Part(type='text', data={'text': content})] if content else None, tool_calls=tool_calls))

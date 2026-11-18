@@ -6,6 +6,7 @@ from uuid import UUID
 from pathlib import Path
 import logging
 from ..core.interfaces.memory_manager import IdTrackedMemoryManger
+from ..core.exceptions import PangolinError
 from ..core.types import ChatSummary
 from ..messages import TARecord, user_record
 
@@ -30,16 +31,19 @@ class SQLiteMemoryManager(IdTrackedMemoryManger):
         self.max_records_to_reload: int = max_records_to_reload
 
         Path(sqlite_folder).mkdir(parents=True, exist_ok=True)
-        self.db_connection = sqlite3.connect(f'{sqlite_folder}/ta_records.db')
-        self._verify_tables() # verify the required tables exist
-        if self._get_chat_summary(): # check for an existing chat history for the provided chat_id
-            LOGGER.info(f'previous session found for {self.chat_id}')
-            self._reload()
-            if len(self.memory) > 0 and self.memory[0].role != 'user':      # APIs like the first chat record to be a user message so trim the reloaded context
-                self.trim_context() 
-        else: # create a new chat history
-            LOGGER.info(f'creating new session history for {self.chat_id}')
-            self._set_chat_summary( '', '') # creates a session entry in the chat_summaries table with empty name and description
+        try:
+            self.db_connection = sqlite3.connect(f'{sqlite_folder}/ta_records.db')
+            self._verify_tables() # verify the required tables exist
+            if self._get_chat_summary(): # check for an existing chat history for the provided chat_id
+                LOGGER.info(f'previous session found for {self.chat_id}')
+                self._reload()
+                if len(self.memory) > 0 and self.memory[0].role != 'user':      # APIs like the first chat  record to be a user message so trim the reloaded context
+                    self.trim_context() 
+            else: # create a new chat history
+                LOGGER.info(f'creating new session history for {self.chat_id}')
+                self._set_chat_summary( '', '') # creates a session entry in the chat_summaries table with empty name and description
+        except Exception as e:
+            raise PangolinError(f'SQLiteMemoryManager failed to connect to database {e}')
 
     # verify the required tables, create if missing
     def _verify_tables(self):
@@ -181,5 +185,5 @@ class SQLiteMemoryManager(IdTrackedMemoryManger):
             self.memory = [ m for m in self.memory if m.tool_call_id not in dropped_tool_call_ids]
 
         if not self.memory or len(self.memory) == 0:
-            LOGGER.info('trimming removed the entire history')
-            self.memory.append(user_record('run away context trimming, deleted that whole context!'))
+            LOGGER.error('trimming removed the entire history')
+            raise PangolinError('SQLiteMemoryManager.trim_context() dropped all in memory chat history. increase max_tokens in AgentRuntime or reduce system prompt, skills, and or available tools.')

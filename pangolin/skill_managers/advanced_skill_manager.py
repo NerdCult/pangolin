@@ -69,6 +69,9 @@ class AdvancedSkillManager(SkillManagerSkillMaker):
             lines.append(f'{name} = {parse_skill(path)[0]}')
         self.menu = '\n'.join(lines)
 
+        for name, _ in self.loaded_skills.items():
+            self.load_skill(name)
+
         LOGGER.info('skills loaded')
 
     # provide the skill menu preamble + menu + loaded skills

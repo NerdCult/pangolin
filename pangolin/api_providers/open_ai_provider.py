@@ -4,6 +4,7 @@ from openai import OpenAI, AsyncOpenAI
 import json, logging
 from typing import Iterator, Protocol
 from ..core.interfaces import Provider, Client, ClientAsync
+from ..core.exceptions import PangolinTypeError
 from ..messages import TARecord, Part, ApiEvent, ToolCall
 
 LOGGER = logging.getLogger(__name__)
@@ -15,6 +16,10 @@ class OpenAIClient(Client, ClientAsync, Protocol):
         model_name: must be a name recognized by the API use OpenAIProvider to get a list of models
         api_kwargs: passed through to chat.completions.create() model, messages, tools, and stream set internally and should not be set in api_kwargs
         '''
+
+        if not isinstance(connection, OpenAI):
+            raise PangolinTypeError('OpenAIClient param connection must be OpenAI')
+
         LOGGER.info(f'__init__: {connection} {model_name}')
         self.connection = connection
         self.connection_async = AsyncOpenAI(api_key= self.connection.api_key, base_url=self.connection.base_url)

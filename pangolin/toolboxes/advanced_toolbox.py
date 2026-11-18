@@ -1,10 +1,11 @@
 #Copyright (c) 2026 Gene B. Denney. All Rights Reserved.
 
-import importlib, json, os, traceback, sys, logging
+import importlib, json, os, sys, logging
 from pathlib import Path
 from typing import Iterator
 from ..messages import ToolCallResult
 from ..core.interfaces.toolbox import ToolboxAdvanced, AgentRuntime
+from ..core.exceptions import PangolinImportError
 
 LOGGER = logging.getLogger(__name__)
 
@@ -47,7 +48,7 @@ class AdvancedToolbox(ToolboxAdvanced):
         LOGGER.debug(f'loading tool {file}')
         spec = importlib.util.spec_from_file_location(file.stem, file)
         if spec is None or spec.loader is None:
-            raise ImportError(file)
+            raise PangolinImportError(f'AdvancedToolbox failed to read tool spec {file}')
         try:
             mod = importlib.util.module_from_spec(spec)
             sys.modules[file.stem] = mod
@@ -60,8 +61,9 @@ class AdvancedToolbox(ToolboxAdvanced):
             else:
                 fn = getattr(mod, "run")
             self.registry[schema["name"]] = (schema, fn)
-        except Exception:
-            LOGGER.warning(f'failed to load tool {file}')
+        except Exception as e:
+            LOGGER.error(f'failed to load tool {file} {e}')
+            raise PangolinImportError(f'AdvancedToolbox failed to load tool {file} {e}')
 
     # returns the OpenAI spec tool schemas
     def schemas(self):
@@ -95,8 +97,5 @@ class AdvancedToolbox(ToolboxAdvanced):
     def handle_tool_calls(self, calls) -> Iterator[ToolCallResult]:
         LOGGER.info(f'handling tool calls {len(calls)}')
         for c in calls:
-            try:
-                out = self.run_tool(c.name, c.args)
-            except Exception as e:
-                out = f"error: {type(e).__name__}: {e}"
+            out = self.run_tool(c.name, c.args)
             yield ToolCallResult(id=c.id, result=out)

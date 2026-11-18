@@ -3,6 +3,7 @@
 from typing import Iterator, AsyncGenerator
 import logging, asyncio, threading
 from ..core.interfaces import AgentRuntime, MemoryManager,SkillManager, Toolbox, ToolboxAdvanced, ApiAggregator, ApiAggregatorAsync
+from ..core.exceptions import PangolinTypeError
 from ..messages import TARecord, Part, AgentMessage, ToolCall
 from ..utils import count_tokens
 from ..memory_managers import SimpleMemoryManager
@@ -35,6 +36,15 @@ class DefaultAgentRuntime(AgentRuntime):
         
         LOGGER.info(f'__init__: \n{aggregator}\n{system_prompt}\n{memory_manager}\n{skill_manager}\n{toolbox}\n{max_tokens}\n{max_rounds} ')
 
+        if not isinstance(aggregator, ApiAggregator):
+            raise PangolinTypeError('aggregator parameter does not implement ApiAggregator')
+        if memory_manager and not isinstance(memory_manager, MemoryManager):
+            raise PangolinTypeError('memory_manager parameter does not implement MemoryManger')
+        if skill_manager and not isinstance(skill_manager, SkillManager):
+            raise PangolinTypeError('skill_manager parameter does not implement SkillManager')
+        if toolbox and not isinstance(toolbox, Toolbox):
+            raise PangolinTypeError('toolbox parameter does not implement Toolbox')
+        
         self.aggregator: ApiAggregator = aggregator
         self.system_prompt: str = system_prompt
         self.memory_manager = memory_manager or SimpleMemoryManager()
@@ -83,7 +93,6 @@ class DefaultAgentRuntime(AgentRuntime):
                     LOGGER.info(f'assistant message recieved: {agent_message.message}')
                     self._add_context(agent_message.message)
                     if agent_message.message.tool_calls:
-                        print ('got tools')
                         for tc in agent_message.message.tool_calls:
                             tool_calls.append(tc) 
 
@@ -97,6 +106,8 @@ class DefaultAgentRuntime(AgentRuntime):
     def handle_user_message(self, message: TARecord) -> Iterator[AgentMessage]:
         ''' Main entry point to start the agentic loop. '''
 
+        if not isinstance(message, TARecord):
+            raise PangolinTypeError('message does not implement TARecord')
         LOGGER.info(f'user message recieved: {message.to_json()}')
 
         self._add_context(message)
@@ -117,8 +128,12 @@ class DefaultAgentRuntime(AgentRuntime):
     
     async def handle_user_message_async(self, message: TARecord) -> AsyncGenerator[AgentMessage]:
         ''' Main entry point to start the agentic loop. '''
+        
+        if not isinstance(message, TARecord):
+            raise PangolinTypeError('message does not implement TARecord')
         if not isinstance(self.aggregator, ApiAggregatorAsync):
-            raise TypeError('Aggregator does not implement ApiAggregatorAsync')
+            raise PangolinTypeError('Aggregator does not implement ApiAggregatorAsync')
+        
         LOGGER.info(f'user message recieved: {message.to_json()}')
     
         self._add_context(message)
@@ -142,9 +157,11 @@ class DefaultAgentRuntime(AgentRuntime):
                              stop: threading.Event = threading.Event(),
                              done: threading.Event = threading.Event()):
         ''' To ansycio.Queue entry point to start the agentic loop. '''
+        
+        if not isinstance(message, TARecord):
+            raise PangolinTypeError('message does not implement TARecord')
         if not isinstance(self.aggregator, ApiAggregatorAsync):
-            LOGGER.warning('aggregator does not implement ApiAggregatorAsync')
-            raise TypeError('aggregator does not implement ApiAggregatorAsync')
+            raise PangolinTypeError('aggregator does not implement ApiAggregatorAsync')
 
         LOGGER.info(f'user massege recieved: {message.to_json()}')
 
