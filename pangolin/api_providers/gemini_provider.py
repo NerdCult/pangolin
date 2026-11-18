@@ -1,10 +1,10 @@
 #Copyright (c) 2026 Gene B. Denney. All Rights Reserved.
 
 import logging, uuid, base64
-from typing import Iterator
+from typing import Iterator, Protocol, AsyncGenerator
 from google import genai
 from google.genai import types
-from ..core.interfaces import Provider, Client
+from ..core.interfaces import Provider, Client, ClientAsync
 from ..messages import TARecord, ApiEvent, ToolCall
 
 LOGGER = logging.getLogger(__name__)
@@ -14,7 +14,7 @@ DUMMY_SIGNATURE = b"skip_thought_signature_validator"
 # Gemini only knows 'user' and 'model'. Tool results go back as 'user'.
 ROLE_MAP = {"user": "user", "assistant": "model", "tool": "user"}
 
-class GeminiClient(Client):
+class GeminiClient(Client, ClientAsync, Protocol):
     def __init__(self, client: genai.Client, model_name: str, **api_kwargs):
         '''
         client: a google.genai.Client 

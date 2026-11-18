@@ -50,6 +50,52 @@ class OpenAIClient(Client, ClientAsync, Protocol):
         for m in messages:
             openai_messages.append(self._message_to_openai(m))
         return openai_messages
+
+    def _process_chunk(self, chunk, calls, raw_args):
+                delta = chunk.choices[0].delta
+                finish_reason = chunk.choices[0].finish_reason
+        
+                extra = getattr(delta, "model_extra", None) or {}
+                rtext = getattr(delta, "reasoning_content", None) or extra.get  ("reasoning_content") or extra.get ("reasoning")
+        
+                if rtext:
+                    LOGGER.debug(f'thinking: {rtext}')
+                    return ApiEvent(
+                        event_type="thinking",
+                        content=rtext
+                     )
+        
+                if delta.content:
+                    LOGGER.debug(f'replying {delta.content}')
+                    return ApiEvent(
+                        event_type="replying",
+                        content=delta.content
+                    )
+        
+                for call in delta.tool_calls or []:
+                    idx = call.index
+                    if call.id:
+                        calls.setdefault(idx, ToolCall(id=call.id, name="", args={})).id = call.id
+                    if call.function:
+                        if call.function.name:
+                            calls.setdefault(idx, ToolCall(id=call.id, name="", args={})).name = call.function.name
+                        if call.function.arguments:
+                            raw_args[idx] = raw_args.get(idx, "") + call.function.arguments
+        
+                if finish_reason:
+                    LOGGER.debug('round complete')
+                    return ApiEvent(event_type='done', content=finish_reason)
+
+    def _process_tool(self, calls, raw_args):
+            for idx, c in calls.items():
+                s = raw_args.get(idx, "").strip()
+                try:
+                    c.args = json.loads(s) if s else {}
+                except json.JSONDecodeError:
+                    c.args = {}   # or keep raw string if you want to be permissive
+            LOGGER.info(f'tool calls: {calls}')
+            return ApiEvent(event_type="tool_call", tool_calls=list(calls.values()))
+
     
     def get_stream(self, messages: list[TARecord], tools: list[dict] | None = None) -> Iterator[ApiEvent]:
         '''
@@ -69,52 +115,14 @@ class OpenAIClient(Client, ClientAsync, Protocol):
         for chunk in stream:
             if not chunk.choices:
                 continue
-            
-            delta = chunk.choices[0].delta
-            finish_reason = chunk.choices[0].finish_reason
-
-            extra = getattr(delta, "model_extra", None) or {}
-            rtext = getattr(delta, "reasoning_content", None) or extra.get  ("reasoning_content") or extra.get ("reasoning")
-
-            if rtext:
-                LOGGER.debug(f'thinking: {rtext}')
-                yield ApiEvent(
-                    event_type="thinking",
-                    content=rtext
-                 )
-
-            if delta.content:
-                LOGGER.debug(f'replying {delta.content}')
-                yield ApiEvent(
-                    event_type="replying",
-                    content=delta.content
-                )
-
-            for call in delta.tool_calls or []:
-                idx = call.index
-                if call.id:
-                    calls.setdefault(idx, ToolCall(id=call.id, name="", args={})).id = call.id
-                if call.function:
-                    if call.function.name:
-                        calls.setdefault(idx, ToolCall(id=call.id, name="", args={})).name = call.function.name
-                    if call.function.arguments:
-                        raw_args[idx] = raw_args.get(idx, "") + call.function.arguments
-
-            if finish_reason:
-                LOGGER.debug('round complete')
-                yield ApiEvent(event_type='done', content=finish_reason)
-                break
+            api_event = self._process_chunk(chunk, calls, raw_args)
+            if api_event:
+                yield api_event
+                if api_event.event_type == 'done':
+                    break
             
         if calls:
-            for idx, c in calls.items():
-                s = raw_args.get(idx, "").strip()
-                try:
-                    c.args = json.loads(s) if s else {}
-                except json.JSONDecodeError:
-                    c.args = {}   # or keep raw string if you want to be permissive
-            LOGGER.info(f'tool calls: {calls}')
-            yield ApiEvent(event_type="tool_call", tool_calls=list(calls.values()))
-    
+            yield self._process_tool(calls, raw_args)
     
     async def get_stream_async(self, messages, tools = None):
         '''
@@ -134,51 +142,14 @@ class OpenAIClient(Client, ClientAsync, Protocol):
         async for chunk in stream:
             if not chunk.choices:
                 continue
-            
-            delta = chunk.choices[0].delta
-            finish_reason = chunk.choices[0].finish_reason
-    
-            extra = getattr(delta, "model_extra", None) or {}
-            rtext = getattr(delta, "reasoning_content", None) or extra.get  ("reasoning_content") or extra.get ("reasoning")
-    
-            if rtext:
-                LOGGER.debug(f'thinking: {rtext}')
-                yield ApiEvent(
-                    event_type="thinking",
-                    content=rtext
-                 )
-    
-            if delta.content:
-                LOGGER.debug(f'replying {delta.content}')
-                yield ApiEvent(
-                    event_type="replying",
-                    content=delta.content
-                )
-    
-            for call in delta.tool_calls or []:
-                idx = call.index
-                if call.id:
-                    calls.setdefault(idx, ToolCall(id=call.id, name="", args={})).id = call.id
-                if call.function:
-                    if call.function.name:
-                        calls.setdefault(idx, ToolCall(id=call.id, name="", args={})).name = call.function.name
-                    if call.function.arguments:
-                        raw_args[idx] = raw_args.get(idx, "") + call.function.arguments
-    
-            if finish_reason:
-                LOGGER.debug('round complete')
-                yield ApiEvent(event_type='done', content=finish_reason)
-                break
+            api_event = self._process_chunk(chunk, calls, raw_args)
+            if api_event:
+                yield api_event
+                if api_event.event_type == 'done':
+                    break
             
         if calls:
-            for idx, c in calls.items():
-                s = raw_args.get(idx, "").strip()
-                try:
-                    c.args = json.loads(s) if s else {}
-                except json.JSONDecodeError:
-                    c.args = {}   # or keep raw string if you want to be permissive
-            LOGGER.info(f'tool calls: {calls}')
-            yield ApiEvent(event_type="tool_call", tool_calls=list(calls.values()))
+            yield self._process_tool(calls, raw_args)
 
 class OpenAIProvider(Provider):
     def __init__(self, url: str, key: str = "", timeout: int = 600):
