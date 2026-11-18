@@ -77,15 +77,15 @@ class DefaultAgentRuntime(AgentRuntime):
         ''' Get the list of tool schemas '''
         return self.toolbox.schemas() if self.toolbox else None
 
-    def _handle_tarecord_from_agent(self, agent_message: AgentMessage) ->  list[ToolCall]:
+    def _handle_agent_message(self, agent_message: AgentMessage, tool_calls: list):
                 # if the ApiAggregator yields a message event add it to the context and check it for tool_calls
-                tool_calls = None
                 if agent_message.behavior == 'message':
                     LOGGER.info(f'assistant message recieved: {agent_message.message}')
                     self._add_context(agent_message.message)
-                    tool_calls = agent_message.message.tool_calls
-                # yield the AgentMessage to be processed for UI
-                return tool_calls
+                    if agent_message.message.tool_calls:
+                        print ('got tools')
+                        for tc in agent_message.message.tool_calls:
+                            tool_calls.append(tc) 
 
     def _handle_tool_calls(self, tool_calls: list[ToolCall]) -> None:
         LOGGER.info('making tool calls')
@@ -102,14 +102,15 @@ class DefaultAgentRuntime(AgentRuntime):
         self._add_context(message)
         for _ in range(self.max_rounds):
             context = self._get_context() # get the context to send to the api
-            tool_calls = None # initialzed to store tool calls 
+            tool_calls = [] # initialzed to store tool calls 
 
             for agent_message in self.aggregator.process_context(context, self._tools()):
-                tool_calls = self._handle_tarecord_from_agent(agent_message)
+                self._handle_agent_message(agent_message, tool_calls)
                 yield agent_message
 
             # if the stream ends with no tool calls the loop exits
             if tool_calls and self.toolbox:
+                LOGGER.debug(f'runtime got {len(tool_calls)} tool calls')
                 self._handle_tool_calls(tool_calls)
             else:
                 break
@@ -123,14 +124,15 @@ class DefaultAgentRuntime(AgentRuntime):
         self._add_context(message)
         for _ in range(self.max_rounds):
             context = self._get_context() # get the context to send to the api
-            tool_calls = None # initialzed to store tool calls 
+            tool_calls = [] # initialzed to store tool calls 
     
             async for agent_message in self.aggregator.process_context_async(context, self._tools()):
-                tool_calls = self._handle_tarecord_from_agent(agent_message)
+                self._handle_agent_message(agent_message, tool_calls)
                 yield agent_message
     
             # if the stream ends with no tool calls the loop exits
             if tool_calls and self.toolbox:
+                LOGGER.debug(f'runtime got {len(tool_calls)} tool calls')
                 self._handle_tool_calls(tool_calls)
             else:
                 break
@@ -155,10 +157,10 @@ class DefaultAgentRuntime(AgentRuntime):
         try:
             for _ in range(self.max_rounds):
                 context = self._get_context() # get the context to send to the api
-                tool_calls = None # initialzed to store tool calls 
+                tool_calls = [] # initialzed to store tool calls 
 
                 async for agent_message in self.aggregator.process_context_async(context, self._tools()):
-                    tool_calls = self._handle_tarecord_from_agent(agent_message)
+                    tool_calls = self._handle_agent_message(agent_message, tool_calls)
                     await queue.put(agent_message)
 
                     if stop.is_set(): 
@@ -166,6 +168,7 @@ class DefaultAgentRuntime(AgentRuntime):
 
                 # if the stream ends with no tool calls the loop exits
                 if tool_calls and self.toolbox:
+                    LOGGER.debug(f'runtime got {len(tool_calls)} tool calls')
                     self._handle_tool_calls(tool_calls)
                 else:
                     await task_done()

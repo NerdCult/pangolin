@@ -11,7 +11,7 @@ class DefaultApiAggregator(ApiAggregator):
         LOGGER.info(f'__init__: {client}')
         self.client: Client = client
 
-    def _handle_api_event(self, event: ApiEvent) -> AgentMessage:
+    def _handle_api_event(self, event: ApiEvent, tool_calls: list) -> AgentMessage:
         if event.event_type == "thinking":
             return AgentMessage(behavior= 'thinking', content= event.content)
 
@@ -21,7 +21,8 @@ class DefaultApiAggregator(ApiAggregator):
 
         # Tool calls are assembled in the api_provider.Client implementation and can be API specific
         if event.event_type == "tool_call":
-            tool_calls = event.tool_calls
+            for tc in event.tool_calls:
+                tool_calls.append(tc)
             return AgentMessage(behavior='tool_calls', content=tool_calls)
 
         if event.event_type  == "done":
@@ -30,12 +31,12 @@ class DefaultApiAggregator(ApiAggregator):
     def process_context(self, context: list[TARecord], tools: list[dict]):
         LOGGER.info(f'processing context with {len(context)} records and {len(tools) if tools else '0'}tools')
         content = ""
-        tool_calls = None
+        tool_calls = []
 
         # Get the ApiEvent stream from the api_providers.Client implementation.
         # ApiEvents can be partials of the LLM out put they are yielded as they arrive for responsive UI
         for event in self.client.get_stream(context, tools):
-            yield self._handle_api_event(event)
+            yield self._handle_api_event(event, tool_calls)
 
         yield AgentMessage(behavior='message', message=TARecord(role='assistant', content=[Par(type='text', data={'text': content})] if content else None, tool_calls=tool_calls))
 
