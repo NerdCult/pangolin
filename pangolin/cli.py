@@ -58,7 +58,6 @@ async def cli_queue(session: AgentRuntime):
         raise TypeError('Agent Runtime does not implement AgentRuntimeToQueue')
 
     async def output(queue: asyncio.Queue):
-        print('starting output')
         thinking = False
         replying = False
         using_tool = False 
