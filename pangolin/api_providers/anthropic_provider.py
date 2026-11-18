@@ -156,6 +156,50 @@ class AnthropicClient(Client, ClientAsync, Protocol):
             })
         return converted
     
+    def _process_event(self, event, calls):
+        event_type = getattr(event, "type", None)
+
+        if event_type == "text":
+            LOGGER.debug(f'replying {event.text}')
+            return ApiEvent(event_type="replying", content=event.text)                    
+
+        if event_type == "thinking":
+            LOGGER.debug(f'thinking: {event.thinking}')
+            return ApiEvent(event_type="thinking", content=event.thinking)
+
+        # tool call start
+        if event_type == "content_block_start":
+            block = event.content_block
+            if getattr(block, "type", None) == "tool_use":
+                LOGGER.debug(f'tool call start: {block.name}')
+                calls[event.index] = ToolCall(id=block.id, name=block.name, args={})
+            return
+
+        if event_type == "input_json":
+            return
+
+        # convert Anthropic tool call to the internal ToolCall format
+        if event_type == "content_block_stop":
+            block = getattr(event, "content_block", None)
+            if block is not None and getattr(block, "type", None) == "tool_use":
+                args = getattr(block, "input", None) or {}
+                if not isinstance(args, dict):
+                    args = {"_value": args}
+                call = calls.get(event.index) or ToolCall(id=getattr(block, "id", ""), name=getattr(block, "name", ""))
+                call.id = getattr(block, "id", call.id)
+                call.name = getattr(block, "name", call.name)
+                call.args = args
+                calls[event.index] = call
+                LOGGER.debug(f'tool calls: {calls}')
+                return ApiEvent(event_type="tool_call", tool_calls=list(calls.values()))
+                    
+
+        if event_type == "error":
+            err = getattr(event, "error", None)
+            message = getattr(err, "message", None) or str(err or event)
+            LOGGER.error(f'api error {message}')
+            return ApiEvent(event_type="done", content=message)
+
     def get_stream(self, messages: list[TARecord], tools: list[dict] | None = None) -> Iterator[ApiEvent]:
         ''' calls Anthropic.connection.messages.stream() and converts the MessageStream events to the internal ApiEvent format '''
         LOGGER.info(f'get_stream with {len(messages)} records and {len(tools) if tools else '0'} tools')
@@ -174,51 +218,9 @@ class AnthropicClient(Client, ClientAsync, Protocol):
         # content_block_start/stop), not the raw SSE event types.
         with self.connection.messages.stream(**self.api_kwargs) as stream:
             for event in stream:
-                event_type = getattr(event, "type", None)
-
-                if event_type == "text":
-                    LOGGER.debug(f'replying {event.text}')
-                    yield ApiEvent(event_type="replying", content=event.text)
-                    continue
-
-                if event_type == "thinking":
-                    LOGGER.debug(f'thinking: {event.thinking}')
-                    yield ApiEvent(event_type="thinking", content=event.thinking)
-                    continue
-
-                # tool call start
-                if event_type == "content_block_start":
-                    block = event.content_block
-                    if getattr(block, "type", None) == "tool_use":
-                        LOGGER.debug(f'tool call start: {block.name}')
-                        calls[event.index] = ToolCall(id=block.id, name=block.name, args={})
-                    continue
-
-                if event_type == "input_json":
-                    continue
-
-                # convert Anthropic tool call to the internal ToolCall format
-                if event_type == "content_block_stop":
-                    block = getattr(event, "content_block", None)
-                    if block is not None and getattr(block, "type", None) == "tool_use":
-                        args = getattr(block, "input", None) or {}
-                        if not isinstance(args, dict):
-                            args = {"_value": args}
-                        call = calls.get(event.index) or ToolCall(id=getattr(block, "id", ""), name=getattr(block, "name", ""))
-                        call.id = getattr(block, "id", call.id)
-                        call.name = getattr(block, "name", call.name)
-                        call.args = args
-                        calls[event.index] = call
-                        LOGGER.debug(f'tool calls: {calls}')
-                        yield ApiEvent(event_type="tool_call", tool_calls=list(calls.values()))
-                    continue
-
-                if event_type == "error":
-                    err = getattr(event, "error", None)
-                    message = getattr(err, "message", None) or str(err or event)
-                    LOGGER.error(f'api error {message}')
-                    yield ApiEvent(event_type="done", content=message)
-                    return
+                api_event = self._process_event(event, calls)
+                if api_event:
+                    yield api_event
 
         yield ApiEvent(event_type="done", content="", tool_calls=list(calls.values()))
 
@@ -240,51 +242,9 @@ class AnthropicClient(Client, ClientAsync, Protocol):
         # content_block_start/stop), not the raw SSE event types.
         async with self.connection_async.messages.stream(**self.api_kwargs) as stream:
             async for event in stream:
-                event_type = getattr(event, "type", None)
-
-                if event_type == "text":
-                    LOGGER.debug(f'replying {event.text}')
-                    yield ApiEvent(event_type="replying", content=event.text)
-                    continue
-
-                if event_type == "thinking":
-                    LOGGER.debug(f'thinking: {event.thinking}')
-                    yield ApiEvent(event_type="thinking", content=event.thinking)
-                    continue
-
-                # tool call start
-                if event_type == "content_block_start":
-                    block = event.content_block
-                    if getattr(block, "type", None) == "tool_use":
-                        LOGGER.debug(f'tool call start: {block.name}')
-                        calls[event.index] = ToolCall(id=block.id, name=block.name, args={})
-                    continue
-
-                if event_type == "input_json":
-                    continue
-
-                # convert Anthropic tool call to the internal ToolCall format
-                if event_type == "content_block_stop":
-                    block = getattr(event, "content_block", None)
-                    if block is not None and getattr(block, "type", None) == "tool_use":
-                        args = getattr(block, "input", None) or {}
-                        if not isinstance(args, dict):
-                            args = {"_value": args}
-                        call = calls.get(event.index) or ToolCall(id=getattr(block, "id", ""), name=getattr(block, "name", ""))
-                        call.id = getattr(block, "id", call.id)
-                        call.name = getattr(block, "name", call.name)
-                        call.args = args
-                        calls[event.index] = call
-                        LOGGER.debug(f'tool calls: {calls}')
-                        yield ApiEvent(event_type="tool_call", tool_calls=list(calls.values()))
-                    continue
-
-                if event_type == "error":
-                    err = getattr(event, "error", None)
-                    message = getattr(err, "message", None) or str(err or event)
-                    LOGGER.error(f'api error {message}')
-                    yield ApiEvent(event_type="done", content=message)
-                    return
+                api_event = self._process_event(event, calls)
+                if api_event:
+                    yield api_event
 
         yield ApiEvent(event_type="done", content="", tool_calls=list(calls.values()))
 
