@@ -1,6 +1,6 @@
 #Copyright (c) 2026 Gene B. Denney. All Rights Reserved.
 
-from .agent_runtime import AgentRuntime, AgentRuntimeToQueue
+from .agent_runtime import AgentRuntime, AgentRuntimeToQueue, AgentRuntimeAsync
 from .api_aggrerator import ApiAggregator, ApiAggregatorAsync
 from .client import Client, ClientAsync
 from .memory_manager import MemoryManager
@@ -11,6 +11,7 @@ from .toolbox import Toolbox, ToolboxAdvanced
 
 __all__ = [
     'AgentRuntime',
+    'AgentRuntimeAsync',
     'AgentRuntimeToQueue',
     'ApiAggregator',
     'ApiAggregatorAsync',

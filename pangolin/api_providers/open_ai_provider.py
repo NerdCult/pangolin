@@ -118,7 +118,7 @@ class OpenAIClient(Client, ClientAsync, Protocol):
     
     async def get_stream_async(self, messages, tools = None):
         '''
-        Calls chat.completeion.create(), yields the chunks as ApiEvents
+        Calls chat.completeion.create() on the async OpenAI client, yields the chunks as ApiEvents
         '''
         LOGGER.info(f'get_stream with {len(messages)} records and {len(tools) if tools else '0'} tools')
         stream = await self.connection_async.chat.completions.create(

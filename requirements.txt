@@ -6,3 +6,4 @@ ddgs
 anthropic
 dataclasses-json
 google-genai
+pynput

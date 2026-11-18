@@ -14,11 +14,16 @@ class AgentRuntime(Protocol):
     def handle_user_message(self, message: TARecord) -> Iterator[AgentMessage]: ...
 
 @runtime_checkable
+class AgentRuntimeAsync(Protocol):
+    '''
+    Adds AgentRuntime method to run agent requests asychronously.
+    '''
+    async def handle_user_message_async(self, message: TARecord) -> AsyncGenerator[AgentMessage]: ...
+
+@runtime_checkable
 class AgentRuntimeToQueue(Protocol):
     '''
-    The central orchestration class and entry point for running inference.
-    manages the ApiAggregator, SkillsManager, Toolbox, and Memory Manager
-    routes steps between the different components.
+    Adds AgentRuntime method to use an asyncio.Queue to provide the results.
     '''
     async def handle_user_message_to_queue(self, message: TARecord, 
                              queue: asyncio.Queue[AgentMessage | None], 

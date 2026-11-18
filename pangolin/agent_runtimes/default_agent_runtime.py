@@ -114,6 +114,27 @@ class DefaultAgentRuntime(AgentRuntime):
             else:
                 break
     
+    async def handle_user_message_async(self, message: TARecord) -> AsyncGenerator[AgentMessage]:
+        ''' Main entry point to start the agentic loop. '''
+        if not isinstance(self.aggregator, ApiAggregatorAsync):
+            raise TypeError('Aggregator does not implement ApiAggregatorAsync')
+        LOGGER.info(f'user message recieved: {message.to_json()}')
+    
+        self._add_context(message)
+        for _ in range(self.max_rounds):
+            context = self._get_context() # get the context to send to the api
+            tool_calls = None # initialzed to store tool calls 
+    
+            async for agent_message in self.aggregator.process_context_async(context, self._tools()):
+                tool_calls = self._handle_tarecord_from_agent(agent_message)
+                yield agent_message
+    
+            # if the stream ends with no tool calls the loop exits
+            if tool_calls and self.toolbox:
+                self._handle_tool_calls(tool_calls)
+            else:
+                break
+        
     async def handle_user_message_to_queue(self, message: TARecord, 
                              queue: asyncio.Queue[AgentMessage | None], 
                              stop: threading.Event = threading.Event(),

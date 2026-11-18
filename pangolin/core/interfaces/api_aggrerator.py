@@ -16,8 +16,6 @@ class ApiAggregator(Protocol):
 @runtime_checkable
 class ApiAggregatorAsync(Protocol):
     '''
-    recieves the context and tools schems from the AgentRuntime, passes to the API Client, and handles the returned ApiEvents; 
-    passes deltas through as AgentMessages for responsive user experinece
-    aggregates the deltas to create TARecords and passes them through for the AgentRuntime to process.
+    Async implementation of ApiAggregator.
     '''
     async def process_context_async(self, context: list[TARecord]) -> AsyncGenerator[AgentMessage]: ...
