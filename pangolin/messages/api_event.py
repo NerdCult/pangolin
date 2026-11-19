@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass 
 from typing import Literal, Any
-from . import ToolCall
+from .tool_call import ToolCall
 
 EventType = Literal["thinking", "replying", "tool_call", "done", 'error']
 

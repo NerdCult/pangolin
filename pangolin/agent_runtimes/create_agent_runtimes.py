@@ -1,7 +1,7 @@
 #Copyright (c) 2026 Gene B. Denney. All Rights Reserved.
 
 from ..utils import create_openai_client, create_anthropic_client, create_gemini_client, create_smoke_test_client
-from ..core.interfaces import MemoryManager, Toolbox, SkillManager
+from ..core.interfaces import MemoryManager, Toolbox, SkillManager, Guardrail
 from ..memory_managers import SimpleMemoryManager
 from ..api_aggregators import DefaultApiAggregator
 from . import DefaultAgentRuntime
@@ -14,6 +14,7 @@ def openai_agent_runtime(url: str,
                          memory_manager: MemoryManager | None = None,
                          skill_manager: SkillManager | None = None,
                          toolbox: Toolbox | None = None,
+                         guardrail: Guardrail | None = None,
                          max_tokens: int = 32_000,
                          max_rounds: int = 10,
                          **api_kwargs):
@@ -24,6 +25,7 @@ def openai_agent_runtime(url: str,
         memory_manager=memory_manager or SimpleMemoryManager(),
         skill_manager=skill_manager,
         toolbox=toolbox,
+        guardrail=guardrail,
         max_tokens=max_tokens,
         max_rounds=max_rounds
     )
@@ -36,6 +38,7 @@ def anthropic_agent_runtime(url: str,
                          memory_manager: MemoryManager | None = None,
                          skill_manager: SkillManager | None = None,
                          toolbox: Toolbox | None = None,
+                         guardrail: Guardrail | None = None, 
                          max_tokens: int = 32_000,
                          max_rounds: int = 10,
                          **api_kwargs):
@@ -46,6 +49,7 @@ def anthropic_agent_runtime(url: str,
         memory_manager=memory_manager or SimpleMemoryManager(),
         skill_manager=skill_manager,
         toolbox=toolbox,
+        guardrail=guardrail,
         max_tokens=max_tokens,
         max_rounds=max_rounds
     )
@@ -58,6 +62,7 @@ def gemini_agent_runtime(
                          memory_manager: MemoryManager | None = None,
                          skill_manager: SkillManager | None = None,
                          toolbox: Toolbox | None = None,
+                         guardrail: Guardrail | None = None,
                          max_tokens: int = 32_000,
                          max_rounds: int = 10,
                          **api_kwargs):
@@ -68,6 +73,7 @@ def gemini_agent_runtime(
         memory_manager=memory_manager or SimpleMemoryManager(),
         skill_manager=skill_manager,
         toolbox=toolbox,
+        guardrail=guardrail,
         max_tokens=max_tokens,
         max_rounds=max_rounds
     )
@@ -78,6 +84,7 @@ def smoke_test_runtime(
                          memory_manager: MemoryManager | None = None,
                          skill_manager: SkillManager | None = None,
                          toolbox: Toolbox | None = None,
+                         guardrail: Guardrail | None = None,
                          max_tokens: int = 32_000,
                          max_rounds: int = 10,
                          responses: list[ApiEvent] | None = None,
@@ -90,6 +97,7 @@ def smoke_test_runtime(
             memory_manager=memory_manager or SimpleMemoryManager(),
             skill_manager=skill_manager,
             toolbox=toolbox,
+            guardrail=guardrail,
             max_tokens=max_tokens,
             max_rounds=max_rounds
         )
