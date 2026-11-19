@@ -47,7 +47,7 @@ class DefaultAgentRuntime(AgentRuntime, AgentRuntimeToQueue, AgentRuntimeAsync, 
             raise PangolinTypeError('skill_manager parameter does not implement SkillManager')
         if toolbox and not isinstance(toolbox, Toolbox):
             raise PangolinTypeError('toolbox parameter does not implement Toolbox')
-        if guardrail and (not isinstance(guardrail, Guardrail) or not isinstance(guardrail, GuardrailAsync)):
+        if guardrail and (not isinstance(guardrail, Guardrail) and not isinstance(guardrail, GuardrailAsync)):
             raise PangolinTypeError('guardrail parameter does not implement Guardrail or GuardrailAsync')
         
         self.aggregator: ApiAggregator = aggregator
@@ -259,9 +259,9 @@ class DefaultAgentRuntime(AgentRuntime, AgentRuntimeToQueue, AgentRuntimeAsync, 
 
                 async for agent_message in self.aggregator.process_context_async(context, self._tools()):
                     if isinstance(self.guardrail, GuardrailAsync):
-                        self._handle_agent_message_async(agent_message, tool_calls, blocked_tool_call_ids,  reason)
+                        await     self._handle_agent_message_async(agent_message, tool_calls, blocked_tool_call_ids,  reason)
                     else:
-                        await asyncio.to_thread(self._handle_agent_message_async, agent_message, tool_calls,    blocked_tool_call_ids, reason)
+                        await asyncio.to_thread(self._handle_agent_message, agent_message, tool_calls,    blocked_tool_call_ids, reason)
                     yield agent_message
     
                 # if the stream ends with no tool calls the loop exits
@@ -306,9 +306,9 @@ class DefaultAgentRuntime(AgentRuntime, AgentRuntimeToQueue, AgentRuntimeAsync, 
 
                 async for agent_message in self.aggregator.process_context_async(context, self._tools()):
                     if isinstance(self.guardrail, GuardrailAsync):
-                        self._handle_agent_message_async(agent_message, tool_calls, blocked_tool_call_ids,  reason)
+                        await self._handle_agent_message_async(agent_message, tool_calls, blocked_tool_call_ids,  reason)
                     else:
-                        await asyncio.to_thread(self._handle_agent_message_async, agent_message, tool_calls, blocked_tool_call_ids, reason)
+                        await asyncio.to_thread(self._handle_agent_message, agent_message, tool_calls, blocked_tool_call_ids, reason)
                     await queue.put(agent_message)
 
                     if stop.is_set(): 
