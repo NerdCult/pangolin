@@ -12,9 +12,6 @@ class DefaultGuardrail(Guardrail):
 
     def handle_guardrail_event(self, event: GuardrailEvent) -> GuardrailEventResponse:
         LOGGER.debug(f'guardrail recieved event: {event.to_json()}')
-        if event.event_type == 'tool_call':
-            return GuardrailEventResponse(event_type='approve')
-            
         if event.event_type == 'tool_call_result':
             return GuardrailEventResponse(event_type='approve')
         
@@ -22,6 +19,8 @@ class DefaultGuardrail(Guardrail):
             return GuardrailEventResponse(event_type='approve')
         
         if event.event_type == 'assistant_output':
+            if event.ta_record.tool_calls:
+                return GuardrailEventResponse(event_type='deny', reason='tools are not allowed')
             return GuardrailEventResponse(event_type='approve')
         
         if event.event_type == 'context_size':

@@ -96,15 +96,40 @@ class DefaultAgentRuntime(AgentRuntime):
                 # if the ApiAggregator yields a message event add it to the context and check it for tool_calls
                 if agent_message.behavior == 'message':
                     LOGGER.info(f'assistant message recieved: {agent_message.message}')
-                    self._add_context(agent_message.message)
+                    if agent_message.message and self.guardrail:
+                        ger = self.guardrail.handle_guardrail_event(
+                            GuardrailEvent(
+                                event_type='assistant_output',
+                                ta_record=agent_message.message
+                            )
+                        )
+
+                        if ger.event_type == 'deny':
+                            raise PangolinError(f'agent message was denied by guardrail {ger.reason}')
+                        if ger.event_type == 'modify':
+                            agent_message.message = ger.ta_record
+
                     if agent_message.message.tool_calls:
                         for tc in agent_message.message.tool_calls:
                             tool_calls.append(tc) 
+                    
+                    self._add_context(agent_message.message)
 
     def _handle_tool_calls(self, tool_calls: list[ToolCall]) -> None:
         LOGGER.info('making tool calls')
         for result in self.toolbox.handle_tool_calls(tool_calls):
             tar = TARecord(role='tool', content=[Part(type='text', data={'text': result.result})], tool_call_id=result.id)
+            if self.guardrail:
+                ger = self.guardrail.handle_guardrail_event(
+                    GuardrailEvent(
+                        event_type='tool_call_result',
+                        ta_record=tar
+                    )
+                )
+                if ger.event_type == 'deny':
+                    raise PangolinError(f'tool result denied by guardrail {ger.reason}')
+                if ger.event_type == 'modify':
+                    tar = ger.ta_record
             LOGGER.debug(f'TOOL CALL RESULT {tar.to_json()}')
             self._add_context(tar)
          
@@ -122,7 +147,7 @@ class DefaultAgentRuntime(AgentRuntime):
                                ))
 
             if ger.event_type =='deny':
-                raise PangolinError('user input denied by guardrail')
+                raise PangolinError(f'user input denied by guardrail {ger.reason}')
             if ger.event_type == 'modify':
                 message = ger.ta_record
 
