@@ -7,6 +7,7 @@ from .memory_manager import MemoryManager
 from .provider import Provider
 from .skill_manager import SkillManager, SkillManagerSkillMaker, SkillManagerDynamic
 from .toolbox import Toolbox, ToolboxAdvanced
+from .guardrail import Guardrail
 
 
 __all__ = [
@@ -17,6 +18,7 @@ __all__ = [
     'ApiAggregatorAsync',
     'Client',
     'ClientAsync',
+    'Guardrail',
     'MemoryManager',
     'Provider',
     'SkillManager',

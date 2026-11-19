@@ -2,8 +2,9 @@
 
 from typing import Iterator, AsyncGenerator
 import logging, asyncio, threading
-from ..core.interfaces import AgentRuntime, MemoryManager,SkillManager, Toolbox, ToolboxAdvanced, ApiAggregator, ApiAggregatorAsync
-from ..core.exceptions import PangolinTypeError
+from ..core.interfaces import AgentRuntime, MemoryManager,SkillManager, Toolbox, ToolboxAdvanced, ApiAggregator, ApiAggregatorAsync, Guardrail
+from ..core.exceptions import PangolinTypeError, PangolinError
+from ..core.types import GuardrailEvent, GuardrailEventResponse
 from ..messages import TARecord, Part, AgentMessage, ToolCall
 from ..utils import count_tokens
 from ..memory_managers import SimpleMemoryManager
@@ -22,6 +23,7 @@ class DefaultAgentRuntime(AgentRuntime):
                  memory_manager: MemoryManager | None = None,
                  skill_manager: SkillManager | None = None, 
                  toolbox: Toolbox | None = None,
+                 guardrail: Guardrail | None = None,
                  max_tokens: int = 32_000,
                  max_rounds: int = 10):
         '''
@@ -44,6 +46,8 @@ class DefaultAgentRuntime(AgentRuntime):
             raise PangolinTypeError('skill_manager parameter does not implement SkillManager')
         if toolbox and not isinstance(toolbox, Toolbox):
             raise PangolinTypeError('toolbox parameter does not implement Toolbox')
+        if guardrail and not isinstance(guardrail, Guardrail):
+            raise PangolinTypeError('guardrail parameter does not implement Guardrail')
         
         self.aggregator: ApiAggregator = aggregator
         self.system_prompt: str = system_prompt
@@ -59,6 +63,7 @@ class DefaultAgentRuntime(AgentRuntime):
             # Initaliaze the toolbox
             self.toolbox.load()
             LOGGER.info('toolbox loaded')
+        self.guardrail = guardrail
         self.max_tokens = max_tokens
         self.max_rounds = max_rounds
 
@@ -109,6 +114,17 @@ class DefaultAgentRuntime(AgentRuntime):
         if not isinstance(message, TARecord):
             raise PangolinTypeError('message does not implement TARecord')
         LOGGER.info(f'user message recieved: {message.to_json()}')
+
+        if self.guardrail:
+            ger = self.guardrail.handle_guardrail_event(
+                GuardrailEvent(event_type='user_input',
+                               ta_record=message
+                               ))
+
+            if ger.event_type =='deny':
+                raise PangolinError('user input denied by guardrail')
+            if ger.event_type == 'modify':
+                message = ger.ta_record
 
         self._add_context(message)
         for _ in range(self.max_rounds):
