@@ -15,10 +15,6 @@ SCHEMA = {
 
 def make_session_aware_run(session):
     def run(tool_name: str, code: str) -> str:
-        try:
-            session.toolbox.create_tool(tool_name, code)
-            return f'{tool_name} created'
-        except Exception as e:
-            return f"Couldn't create {tool_name}: {e}"
+        return session.toolbox.create_tool(tool_name, code)
 
     return run

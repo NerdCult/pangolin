@@ -73,10 +73,16 @@ class AdvancedToolbox(ToolboxAdvanced):
     def create_tool(self, tool_name, code):
         LOGGER.info(f'creating tool {tool_name}')
         LOGGER.debug(code)
-        tool_file_path = f'{self.tools_folder}/{tool_name}.py'
-        with open(tool_file_path, 'w') as tool_file:
-            tool_file.write(code)
-        self._load_tool(Path(tool_file_path))
+        try:
+            tool_file_path = f'{self.tools_folder}/{tool_name}.py'
+            with open(tool_file_path, 'w') as tool_file:
+                tool_file.write(code)
+            self._load_tool(Path(tool_file_path))
+            return f'tool, {tool_name}, created '
+        except Exception as e:
+            text = f'tool, {tool_name}, could not be created {e}'
+            LOGGER.error(text)
+            return text
 
     # executes a tools function 
     def run_tool(self, name, args) -> str:
@@ -91,6 +97,7 @@ class AdvancedToolbox(ToolboxAdvanced):
                 out = out[:self.max_results_length] + f"... [TRUNCATED: result was {len(out)} chars, limit {self.max_results_length}. Request a smaller piece.]"
             return out
         except Exception as e:
+            LOGGER.error(f'run_tool hit and exception {e}')
             return json.dumps({"error": f"{type(e).__name__}: {e}"})
 
     # handle the tool calls provided from the AgentRuntime and returns the ToolCallResults
