@@ -5,7 +5,7 @@ from dataclasses_json import dataclass_json
 from typing import Literal
 from .ta_record import TARecord
 
-agent_message_type = Literal['thinking', 'replying', 'tool_calls', 'message', 'done']
+agent_message_type = Literal['thinking', 'replying', 'tool_calls', 'message', 'done', 'error', 'guardrail']
 
 @dataclass_json
 @dataclass

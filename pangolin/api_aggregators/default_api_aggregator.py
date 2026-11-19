@@ -1,16 +1,19 @@
 #Copyright (c) 2026 Gene B. Denney. All Rights Reserved.
 
 import logging
+from typing import Protocol
 from ..messages import TARecord, AgentMessage, ApiEvent, Part
-from ..core.interfaces import Client, ClientAsync, ApiAggregator
-from ..core.exceptions import PangolinTypeError
+from ..core.interfaces import Client, ClientAsync, ApiAggregator, ApiAggregatorAsync
+from ..core.exceptions import PangolinTypeError, PangolinValueError
 
 LOGGER = logging.getLogger(__name__)
 
-class DefaultApiAggregator(ApiAggregator):
-    def __init__(self, client: Client):
-        LOGGER.info(f'__init__: {client}')
-        self.client: Client = client
+class DefaultApiAggregator(ApiAggregator, ApiAggregatorAsync, Protocol):
+    def __init__(self, client: Client | ClientAsync):
+        LOGGER.debug(f'__init__: {client}')
+        if not isinstance(client, Client) and not isinstance(client, ClientAsync):
+            raise PangolinTypeError('ApiAggregator client param must implement either Client or ClientAsync')
+        self.client: Client | ClientAsync = client
 
     def _handle_api_event(self, event: ApiEvent, tool_calls: list) -> AgentMessage:
         if event.event_type == "thinking":
@@ -45,7 +48,7 @@ class DefaultApiAggregator(ApiAggregator):
     async def process_context_async(self, context: list[TARecord], tools: list[dict]):
         LOGGER.info(f'processing context with {len(context)} records and {len(tools) if tools else '0'}tools')
         if not isinstance(self.client, ClientAsync):
-             raise PangolinTypeError('Client does not implement ClientAsync')
+             raise PangolinValueError('Client does not implement ClientAsync')
         content = ""
         tool_calls = []
 

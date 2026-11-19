@@ -6,3 +6,7 @@ from ..types import GuardrailEventResponse, GuardrailEvent
 @runtime_checkable
 class Guardrail(Protocol):
     def handle_guardrail_event(self, event: GuardrailEvent) -> GuardrailEventResponse: ...
+
+@runtime_checkable
+class GuardrailAsync(Protocol):
+    async def handle_guardrail_event_async(self, event: GuardrailEvent) -> GuardrailEventResponse: ...

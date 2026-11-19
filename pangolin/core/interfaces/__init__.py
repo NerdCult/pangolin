@@ -7,7 +7,7 @@ from .memory_manager import MemoryManager
 from .provider import Provider
 from .skill_manager import SkillManager, SkillManagerSkillMaker, SkillManagerDynamic
 from .toolbox import Toolbox, ToolboxAdvanced
-from .guardrail import Guardrail
+from .guardrail import Guardrail, GuardrailAsync
 
 
 __all__ = [
@@ -19,6 +19,7 @@ __all__ = [
     'Client',
     'ClientAsync',
     'Guardrail',
+    'GuardrailAsync',
     'MemoryManager',
     'Provider',
     'SkillManager',
