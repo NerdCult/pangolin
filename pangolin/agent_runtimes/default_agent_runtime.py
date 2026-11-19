@@ -177,7 +177,7 @@ class DefaultAgentRuntime(AgentRuntime):
                 tool_calls = [] # initialzed to store tool calls 
 
                 async for agent_message in self.aggregator.process_context_async(context, self._tools()):
-                    tool_calls = self._handle_agent_message(agent_message, tool_calls)
+                    self._handle_agent_message(agent_message, tool_calls)
                     await queue.put(agent_message)
 
                     if stop.is_set(): 

@@ -47,11 +47,11 @@ class DefaultApiAggregator(ApiAggregator):
         if not isinstance(self.client, ClientAsync):
              raise PangolinTypeError('Client does not implement ClientAsync')
         content = ""
-        tool_calls = None
+        tool_calls = []
 
         # Get the ApiEvent stream from the api_providers.Client implementation.
         # ApiEvents can be partials of the LLM out put they are yielded as they arrive for responsive UI
         async for event in self.client.get_stream_async(context, tools):
-            yield self._handle_api_event(event)
+            yield self._handle_api_event(event, tool_calls)
 
         yield AgentMessage(behavior='message', message=TARecord(role='assistant', content=[Part(type='text', data={'text': content})] if content else None, tool_calls=tool_calls))
