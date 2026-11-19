@@ -4,6 +4,7 @@ import importlib, json, os, traceback, sys, logging
 from pathlib import Path
 from typing import Iterator
 from ..core.interfaces.toolbox import Toolbox
+from ..core.exceptions import PangolinImportError
 from ..messages.tool_call_result import ToolCallResult
 
 LOGGER = logging.getLogger(__name__)
@@ -47,7 +48,7 @@ class BasicToolbox(Toolbox):
         LOGGER.debug(f'loading tool {file}')
         spec = importlib.util.spec_from_file_location(file.stem, file)
         if spec is None or spec.loader is None:
-            raise ImportError(file)
+            raise PangolinImportError(f'BasicToolbox failed to read tool spec {file}')
         try:
             mod = importlib.util.module_from_spec(spec)
             sys.modules[file.stem] = mod
@@ -59,8 +60,8 @@ class BasicToolbox(Toolbox):
             else:
                 fn = getattr(mod, "run")
             self.registry[schema["name"]] = (schema, fn)
-        except Exception:
-            traceback.print_exc()
+        except Exception as e:
+            raise PangolinImportError(f'BasicToolbox failed to load tool {file} {e}')
 
     # returns the OpenAI formatted tools schems
     def schemas(self) -> list[dict]:
@@ -78,14 +79,12 @@ class BasicToolbox(Toolbox):
                 out = out[:self.max_results_length] + f"... [TRUNCATED: result was {len(out)} chars, limit {self.max_results_length}. Request a smaller piece.]"
             return out
         except Exception as e:
+            LOGGER.error(f'run_tool() returned exception {e}')
             return json.dumps({"error": f"{type(e).__name__}: {e}"})
 
     # handle the list[ToolCall] provided by AgentRuntime and return the ToolCallResults
     def handle_tool_calls(self, calls) -> Iterator[ToolCallResult]:
         LOGGER.info(f'handling tool calls {len(calls)}')
         for c in calls:
-            try:
-                out = self.run_tool(c.name, c.args)
-            except Exception as e:
-                out = f"error: {type(e).__name__}: {e}"
+            out = self.run_tool(c.name, c.args)
             yield ToolCallResult(id=c.id, result=out)

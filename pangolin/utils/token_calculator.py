@@ -11,7 +11,6 @@ def estimate_tokens(text: str) -> int:
     """~4 chars per token. Works for any model, accurate to roughly 10-20%."""
     return (len(text) + 3) // 4
 
-
 def message_tokens(record: TARecord, counter: Counter = estimate_tokens,
                    per_message_overhead: int = 4, image_tokens: int = 1_600) -> int:
     """Estimate tokens for a single message."""
@@ -26,7 +25,6 @@ def message_tokens(record: TARecord, counter: Counter = estimate_tokens,
     for call in record.tool_calls or []:
         n += counter(call.name) + counter(json.dumps(call.args or {}, default=str))
     return n
-
 
 def count_tokens(messages: list[TARecord], tools: list[dict] | None = None,
                  counter: Counter = estimate_tokens, **kwargs) -> int:

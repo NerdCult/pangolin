@@ -2,6 +2,7 @@
 
 import logging
 from ..core.interfaces.memory_manager import MemoryManager
+from ..core.exceptions import PangolinError
 from ..messages import TARecord, user_record
 
 LOGGER = logging.getLogger(__name__)
@@ -43,5 +44,5 @@ class SimpleMemoryManager(MemoryManager):
             self.memory = [ m for m in self.memory if m.tool_call_id not in dropped_tool_call_ids]
 
         if not self.memory or len(self.memory) == 0:
-            LOGGER.info('trimming removed the entire history')
-            self.memory.append(user_record('run away context trimming, deleted that whole context!'))
+            LOGGER.error('trimming removed the entire history')
+            raise PangolinError('SimpleMemoryManager.trim_context() dropped all chat history. increase max_tokens in AgentRuntime or reduce system prompt, skills, and or available tools.')
