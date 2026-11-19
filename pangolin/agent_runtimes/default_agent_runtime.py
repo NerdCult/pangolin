@@ -47,7 +47,7 @@ class DefaultAgentRuntime(AgentRuntime, AgentRuntimeToQueue, AgentRuntimeAsync, 
             raise PangolinTypeError('skill_manager parameter does not implement SkillManager')
         if toolbox and not isinstance(toolbox, Toolbox):
             raise PangolinTypeError('toolbox parameter does not implement Toolbox')
-        if guardrail and (not isinstance(guardrail, Guardrail) and not isinstance(guardrail, GuardrailAsync)):
+        if guardrail and not isinstance(guardrail, (Guardrail, GuardrailAsync)):
             raise PangolinTypeError('guardrail parameter does not implement Guardrail or GuardrailAsync')
         
         self.aggregator: ApiAggregator = aggregator
