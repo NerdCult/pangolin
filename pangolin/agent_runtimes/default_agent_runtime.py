@@ -92,7 +92,7 @@ class DefaultAgentRuntime(AgentRuntime):
         ''' Get the list of tool schemas '''
         return self.toolbox.schemas() if self.toolbox else None
 
-    def _handle_agent_message(self, agent_message: AgentMessage, tool_calls: list):
+    def _handle_agent_message(self, agent_message: AgentMessage, tool_calls: list, blocked_tool_call_ids: list, reason: list):
                 # if the ApiAggregator yields a message event add it to the context and check it for tool_calls
                 if agent_message.behavior == 'message':
                     LOGGER.info(f'assistant message recieved: {agent_message.message}')
@@ -104,10 +104,11 @@ class DefaultAgentRuntime(AgentRuntime):
                             )
                         )
 
-                        if ger.event_type == 'deny':
-                            raise PangolinError(f'agent message was denied by guardrail {ger.reason}')
                         if ger.event_type == 'modify':
                             agent_message.message = ger.ta_record
+                            reason['reason'] = ger.reason
+                            for rtci in ger.rejected_tool_call_ids or []:
+                                blocked_tool_call_ids.append(rtci)
 
                     if agent_message.message.tool_calls:
                         for tc in agent_message.message.tool_calls:
@@ -115,9 +116,19 @@ class DefaultAgentRuntime(AgentRuntime):
                     
                     self._add_context(agent_message.message)
 
-    def _handle_tool_calls(self, tool_calls: list[ToolCall]) -> None:
+    def _handle_tool_calls(self, tool_calls: list[ToolCall], blocked_tool_call_ids: list, reason: str) -> None:
         LOGGER.info('making tool calls')
-        for result in self.toolbox.handle_tool_calls(tool_calls):
+        calls_to_run = []
+        for tc in tool_calls:
+            if tc.id in blocked_tool_call_ids:
+                self._add_context(TARecord(
+                    role='tool', 
+                    content=[Part(type='text', data={'text': reason})],
+                    tool_call_id=tc.id))
+            else:
+                calls_to_run.append(tc)
+
+        for result in self.toolbox.handle_tool_calls(calls_to_run):
             tar = TARecord(role='tool', content=[Part(type='text', data={'text': result.result})], tool_call_id=result.id)
             if self.guardrail:
                 ger = self.guardrail.handle_guardrail_event(
@@ -126,12 +137,24 @@ class DefaultAgentRuntime(AgentRuntime):
                         ta_record=tar
                     )
                 )
-                if ger.event_type == 'deny':
-                    raise PangolinError(f'tool result denied by guardrail {ger.reason}')
                 if ger.event_type == 'modify':
                     tar = ger.ta_record
+
             LOGGER.debug(f'TOOL CALL RESULT {tar.to_json()}')
             self._add_context(tar)
+
+    def _user_message_guardrail_check(self, message: TARecord):
+        if self.guardrail:
+            ger = self.guardrail.handle_guardrail_event(
+                GuardrailEvent(event_type='user_input',
+                               ta_record=message
+                               ))
+
+            if ger.event_type == 'modify':
+                self._add_context(ger.ta_record)
+                return
+
+        self._add_context(message)
          
     def handle_user_message(self, message: TARecord) -> Iterator[AgentMessage]:
         ''' Main entry point to start the agentic loop. '''
@@ -140,30 +163,22 @@ class DefaultAgentRuntime(AgentRuntime):
             raise PangolinTypeError('message does not implement TARecord')
         LOGGER.info(f'user message recieved: {message.to_json()}')
 
-        if self.guardrail:
-            ger = self.guardrail.handle_guardrail_event(
-                GuardrailEvent(event_type='user_input',
-                               ta_record=message
-                               ))
+        self._user_message_guardrail_check(message)
 
-            if ger.event_type =='deny':
-                raise PangolinError(f'user input denied by guardrail {ger.reason}')
-            if ger.event_type == 'modify':
-                message = ger.ta_record
-
-        self._add_context(message)
         for _ in range(self.max_rounds):
             context = self._get_context() # get the context to send to the api
             tool_calls = [] # initialzed to store tool calls 
+            blocked_tool_call_ids = []
+            reason = {'reason': ''}
 
             for agent_message in self.aggregator.process_context(context, self._tools()):
-                self._handle_agent_message(agent_message, tool_calls)
+                self._handle_agent_message(agent_message, tool_calls, blocked_tool_call_ids, reason)
                 yield agent_message
 
             # if the stream ends with no tool calls the loop exits
             if tool_calls and self.toolbox:
                 LOGGER.debug(f'runtime got {len(tool_calls)} tool calls')
-                self._handle_tool_calls(tool_calls)
+                self._handle_tool_calls(tool_calls, blocked_tool_call_ids, reason['reason'])
             else:
                 break
     
@@ -177,19 +192,22 @@ class DefaultAgentRuntime(AgentRuntime):
         
         LOGGER.info(f'user message recieved: {message.to_json()}')
     
-        self._add_context(message)
+        self._user_message_guardrail_check(message)
+
         for _ in range(self.max_rounds):
             context = self._get_context() # get the context to send to the api
             tool_calls = [] # initialzed to store tool calls 
+            blocked_tool_call_ids = []
+            reason = {'reason': ''}
     
             async for agent_message in self.aggregator.process_context_async(context, self._tools()):
-                self._handle_agent_message(agent_message, tool_calls)
+                self._handle_agent_message(agent_message, tool_calls, blocked_tool_call_ids, reason)
                 yield agent_message
     
             # if the stream ends with no tool calls the loop exits
             if tool_calls and self.toolbox:
                 LOGGER.debug(f'runtime got {len(tool_calls)} tool calls')
-                self._handle_tool_calls(tool_calls)
+                self._handle_tool_calls(tool_calls, blocked_tool_call_ids, reason['reason'])
             else:
                 break
         
@@ -210,15 +228,17 @@ class DefaultAgentRuntime(AgentRuntime):
             await queue.put(None)
             done.set()
 
-        self._add_context(message)
+        self._user_message_guardrail_check(message)
 
         try:
             for _ in range(self.max_rounds):
                 context = self._get_context() # get the context to send to the api
                 tool_calls = [] # initialzed to store tool calls 
+                blocked_tool_call_ids = []
+                reason = {'reason': ''}
 
                 async for agent_message in self.aggregator.process_context_async(context, self._tools()):
-                    self._handle_agent_message(agent_message, tool_calls)
+                    self._handle_agent_message(agent_message, tool_calls, blocked_tool_call_ids, reason)
                     await queue.put(agent_message)
 
                     if stop.is_set(): 
@@ -227,7 +247,7 @@ class DefaultAgentRuntime(AgentRuntime):
                 # if the stream ends with no tool calls the loop exits
                 if tool_calls and self.toolbox:
                     LOGGER.debug(f'runtime got {len(tool_calls)} tool calls')
-                    self._handle_tool_calls(tool_calls)
+                    self._handle_tool_calls(tool_calls, blocked_tool_call_ids, reason['reason'])
                 else:
                     await task_done()
                     break

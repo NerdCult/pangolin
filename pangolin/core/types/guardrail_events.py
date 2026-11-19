@@ -13,7 +13,7 @@ class GuardrailEvent():
     event_type: EventType
     ta_record: TARecord | None = None
 
-EventResponseType = Literal['approve', 'deny', 'modify']
+EventResponseType = Literal['approve', 'modify']
 
 @dataclass_json
 @dataclass
@@ -21,3 +21,5 @@ class GuardrailEventResponse():
     event_type: EventResponseType
     reason: str | None = None
     ta_record: TARecord | None = None
+    rejected_tool_call_ids: list[str] | None = None
+    inject_ta_records: list[TARecord] | None = None
