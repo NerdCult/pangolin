@@ -31,8 +31,8 @@ class SQLiteMemoryManager(IdTrackedMemoryManger):
         self.max_records_to_reload: int = max_records_to_reload
 
         Path(sqlite_folder).mkdir(parents=True, exist_ok=True)
+        self.db_path = f'{sqlite_folder}/ta_records.db'
         try:
-            self.db_connection = sqlite3.connect(f'{sqlite_folder}/ta_records.db')
             self._verify_tables() # verify the required tables exist
             if self._get_chat_summary(): # check for an existing chat history for the provided chat_id
                 LOGGER.info(f'previous session found for {self.chat_id}')
@@ -47,7 +47,8 @@ class SQLiteMemoryManager(IdTrackedMemoryManger):
 
     # verify the required tables, create if missing
     def _verify_tables(self):
-        cursor = self.db_connection.cursor()
+        db_connection = sqlite3.connect(self.db_path)
+        cursor = db_connection.cursor()
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS chat_summaries (
                 chat_id TEXT UNIQUE,
@@ -66,13 +67,14 @@ class SQLiteMemoryManager(IdTrackedMemoryManger):
                 data JSON
             );
         ''')
-        self.db_connection.commit()
+        db_connection.commit()
         cursor.close()
         LOGGER.debug('tables verified')
 
     # gets the chat summary for the selected chat_id if it exists
     def _get_chat_summary(self) -> ChatSummary | None:
-        cursor = self.db_connection.cursor()
+        db_connection = sqlite3.connect(self.db_path)
+        cursor = db_connection.cursor()
         cursor.execute("SELECT * FROM chat_summaries WHERE chat_id = ?", (f'{self.chat_id.hex}',))
         r = cursor.fetchone()
         if not r: return None
@@ -85,19 +87,21 @@ class SQLiteMemoryManager(IdTrackedMemoryManger):
 
     # Creates the chat_summaries entry for a new chat_id
     def _set_chat_summary(self, name: str, description: str):
-        cursor = self.db_connection.cursor()
+        db_connection = sqlite3.connect(self.db_path)
+        cursor = db_connection.cursor()
         cursor.execute('''
             INSERT INTO chat_summaries (chat_id, last_used, name, description)
             VALUES (?, ?, ?, ?)
         ''', (f'{self.chat_id.hex}', datetime.now().isoformat(), name, description))
 
-        self.db_connection.commit()
+        db_connection.commit()
         cursor.close()
 
     # load an existing chat history based on the chat_id
     def _reload(self,):
         self.memory.clear()
-        cursor = self.db_connection.cursor()
+        db_connection = sqlite3.connect(self.db_path)
+        cursor = db_connection.cursor()
         cursor.execute('''
             SELECT data FROM chat_records 
             WHERE chat_id = ? 
@@ -116,27 +120,29 @@ class SQLiteMemoryManager(IdTrackedMemoryManger):
 
     # update current chat summary with the last time it was used
     def _update_chat_summary_last_used(self):
-        cursor = self.db_connection.cursor()
+        db_connection = sqlite3.connect(self.db_path)
+        cursor = db_connection.cursor()
         cursor.execute('''
             UPDATE chat_summaries 
             SET last_used = ?
             WHERE chat_id = ?
         ''', ( datetime.now().isoformat(), f'{self.chat_id.hex}'))
 
-        self.db_connection.commit()
+        db_connection.commit()
         cursor.close()
         LOGGER.debug(f'last update time updated for session {self.chat_id}')
 
     # update the chat summary with a name and description could be called by a session aware tool
     def update_chat_summary(self, name: str, description: str):
-        cursor = self.db_connection.cursor()
+        db_connection = sqlite3.connect(self.db_path)
+        cursor = db_connection.cursor()
         cursor.execute('''
             UPDATE chat_summaries 
             SET name = ?, description = ?
             WHERE chat_id = ?
         ''', (  name, description, f'{self.chat_id.hex}'))
 
-        self.db_connection.commit()
+        db_connection.commit()
         cursor.close()
 
         LOGGER.debug(f'summary updated for session {self.chat_id}')
@@ -147,13 +153,14 @@ class SQLiteMemoryManager(IdTrackedMemoryManger):
     # append a TARecord to the history both in memory and in the database
     def add_context(self, message: TARecord):
         self.memory.append(message)
-        cursor = self.db_connection.cursor()
+        db_connection = sqlite3.connect(self.db_path)
+        cursor = db_connection.cursor()
         cursor.execute('''
             INSERT INTO chat_records (chat_id, dtg, data)
             VALUES (?, ?, ?)
         ''', (f'{self.chat_id.hex}', datetime.now().isoformat(), message.to_json()))
 
-        self.db_connection.commit()
+        db_connection.commit()
         cursor.close()
 
         LOGGER.debug(f'message added to session {self.chat_id} {message}')
