@@ -54,6 +54,7 @@ When you see the `>>>` prompt, type your message and hit Enter.
 - `AdvancedToolbox` adds file writing, deletion, tool creation, and skill creation. 
 **USE THE ADVANCED TOOLBOX WITH CAUTION — THERE ARE NO HARD BUILT-IN GUARDRAILS.**
 - the create_tool and delete_file tools are the dangerous one, if you want to not include them. (delete_file only deletes within the current working directory, but with create_tool that guardrail is readily bypassed)
+- Guardrails can be implemented but are not on by default.
 
 To copy the built-in tools and skills run this script (moves them into the current working directory in tools and skills folders or you can set your own target dir, set the same directory when initializing SkillManger and Toolbox):
 

@@ -1,6 +1,7 @@
 #Copyright (c) 2026 Gene B. Denney. All Rights Reserved.
 
-from pangolin import openai_agent_runtime, cli
+from pangolin import openai_agent_runtime
+from .cli import cli
 
 #configure your connection
 

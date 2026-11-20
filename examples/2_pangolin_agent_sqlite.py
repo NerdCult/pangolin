@@ -1,6 +1,7 @@
 #Copyright (c) 2026 Gene B. Denney. All Rights Reserved.
 
-from pangolin import openai_agent_runtime, cli, SQLiteMemoryManager
+from pangolin import openai_agent_runtime, SQLiteMemoryManager
+from .cli import cli
 from uuid import UUID, uuid4
 
 #configure your connection

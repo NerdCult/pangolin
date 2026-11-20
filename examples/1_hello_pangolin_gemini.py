@@ -1,12 +1,7 @@
-from pangolin import gemini_agent_runtime, cli, PangolinToolbox, BasicToolbox, AdvancedSkillManager, SimpleSkillManager, SQLiteMemoryManager
-from uuid import UUID, uuid4
-import logging
+from pangolin import gemini_agent_runtime
+from .cli import cli
 
 MODEL, KEY = 'gemini-3.1-flash-lite', 'your key' #google provides a free tier API token
-
-CHAT_ID = uuid4()
-
-print (CHAT_ID)
 
 #Create a basic instance of AgentRuntime
 session = gemini_agent_runtime( 
