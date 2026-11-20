@@ -150,20 +150,20 @@ class SQLiteMemoryManager(IdTrackedMemoryManger):
     def get_context(self) -> list[ChatRecord]:
         return self.memory
 
-    # append a TARecord to the history both in memory and in the database
-    def add_context(self, message: ChatRecord):
-        self.memory.append(message)
+    # append a ChatRecord to the history both in memory and in the database
+    def add_context(self, record: ChatRecord):
+        self.memory.append(record)
         db_connection = sqlite3.connect(self.db_path)
         cursor = db_connection.cursor()
         cursor.execute('''
             INSERT INTO chat_records (chat_id, dtg, data)
             VALUES (?, ?, ?)
-        ''', (f'{self.chat_id.hex}', datetime.now().isoformat(), message.to_json()))
+        ''', (f'{self.chat_id.hex}', datetime.now().isoformat(), record.to_json()))
 
         db_connection.commit()
         cursor.close()
 
-        LOGGER.debug(f'message added to session {self.chat_id} {message}')
+        LOGGER.debug(f'message added to session {self.chat_id} {record}')
         self._update_chat_summary_last_used()
 
     # remove the oldest record from memory and return and tool call ids popped

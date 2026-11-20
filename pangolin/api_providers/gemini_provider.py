@@ -42,8 +42,8 @@ class GeminiClient(Client, ClientAsync, Protocol):
             ))
         return [types.Tool(function_declarations=decls)]
 
-    # converts TARecord.Parts to the format the Gemini API expects
-    def _message_to_gemini(self, record: ChatRecord, call_names: dict) -> list[types.Part]:
+    # converts ChatRecord to the format the Gemini API expects
+    def _record_to_gemini(self, record: ChatRecord, call_names: dict) -> list[types.Part]:
         if record.role == "tool":
             text = record.content[0].data.get("text", "") if record.content else ""
             return [types.Part(function_response=types.FunctionResponse(
@@ -60,16 +60,16 @@ class GeminiClient(Client, ClientAsync, Protocol):
                 thought_signature=sig))
         return parts
 
-    # converts list[TARecord] to the format the Gemini API expects
-    def _messages_to_gemini(self, messages: list[ChatRecord]):
+    # converts list[ChatRecord] to the format the Gemini API expects
+    def _records_to_gemini(self, records: list[ChatRecord]):
         system, contents, call_names = [], [], {}
-        for m in messages:
+        for m in records:
             if m.role == "system":
                 system += [p.data.get("text", "") for p in m.content or [] if p.type == "text"]
                 continue
             for tc in m.tool_calls or []:
                 call_names[tc.id] = tc.name
-            parts = self._message_to_gemini(m, call_names)
+            parts = self._record_to_gemini(m, call_names)
             if not parts:
                 continue
             role = ROLE_MAP[m.role]
@@ -97,9 +97,9 @@ class GeminiClient(Client, ClientAsync, Protocol):
                     return ApiEvent(event_type="thinking" if part.thought else "replying",
                                    content=part.text)
 
-    def get_stream(self, messages: list[ChatRecord], tools: list[dict] | None = None) -> Iterator[ApiEvent]:
+    def get_stream(self, records: list[ChatRecord], tools: list[dict] | None = None) -> Iterator[ApiEvent]:
         ''' Sets the config with types.GenerateContentConfig() and calls models.generate_content(stream) converting the stream of GenerateContentResponse to ApiEvents '''
-        system, contents = self._messages_to_gemini(messages)
+        system, contents = self._records_to_gemini(records)
         LOGGER.info(f'get_stream with {len(contents)} contents and {len(tools) if tools else 0} tools')
         config = types.GenerateContentConfig(
             system_instruction=system,
@@ -123,7 +123,7 @@ class GeminiClient(Client, ClientAsync, Protocol):
 
     async def get_stream_async(self, messages: list[ChatRecord], tools: list[dict] | None = None) -> AsyncGenerator[ApiEvent]:
         ''' Sets the config with types.GenerateContentConfig() and calls models.generate_content(stream) converting the stream of GenerateContentResponse to ApiEvents '''
-        system, contents = self._messages_to_gemini(messages)
+        system, contents = self._records_to_gemini(messages)
         LOGGER.info(f'get_stream with {len(contents)} contents and {len(tools) if tools else 0} tools')
         config = types.GenerateContentConfig(
             system_instruction=system,

@@ -11,7 +11,7 @@ LOGGER = logging.getLogger(__name__)
 
 DEFAULT_MAX_RESULTS_LENGTH = 50_000
 
-class AdvancedToolbox(ToolboxAdvanced):
+class PangolinToolbox(ToolboxAdvanced):
     ''' 
     Implements ToolboxAdvanced which allows it to create new tools if a create_tool tool is present.
     The default tools_dir is the current working directory + /tools when the toolbox initiallizes.

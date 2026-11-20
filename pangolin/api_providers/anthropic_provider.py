@@ -27,7 +27,7 @@ class AnthropicClient(Client, ClientAsync, Protocol):
         self.api_kwargs["model"] = self.model_name
         self.api_kwargs["max_tokens"] = self.max_tokens
 
-    # convert ta_record.Part to the format the Anthropic API expects
+    # convert Part to the format the Anthropic API expects
     def _part_to_anthropic(self, part: Part) -> dict:
         if part.type == "text":
             return {"type": "text", "text": part.data.get("text", "")}
@@ -42,18 +42,18 @@ class AnthropicClient(Client, ClientAsync, Protocol):
             }
         return {"type": part.type, **part.data}
 
-    # converts the ta_record.Message to the format expected by the Anthropic API
-    def _message_to_anthropic(self, message: ChatRecord) -> dict | None:
-        if message.role == "system":
+    # converts the ChatRecord to the format expected by the Anthropic API
+    def _record_to_anthropic(self, record: ChatRecord) -> dict | None:
+        if record.role == "system":
             return None
 
-        if message.role == "assistant":
+        if record.role == "assistant":
             content = []
-            for part in message.content or []:
+            for part in record.content or []:
                 if part.type == "text" and not part.data.get("text"):
                     continue
                 content.append(self._part_to_anthropic(part))
-            for call in message.tool_calls or []:
+            for call in record.tool_calls or []:
                 content.append({
                     "type": "tool_use",
                     "id": call.id,
@@ -64,40 +64,40 @@ class AnthropicClient(Client, ClientAsync, Protocol):
                 return None
             return {"role": "assistant", "content": content}
 
-        if message.role == "tool":
+        if record.role == "tool":
             text = ""
-            if message.content:
-                text = message.content[0].data.get("text", "")
+            if record.content:
+                text = record.content[0].data.get("text", "")
             return {
                 "role": "user",
                 "content": [{
                     "type": "tool_result",
-                    "tool_use_id": message.tool_call_id,
+                    "tool_use_id": record.tool_call_id,
                     "content": text,
                 }],
             }
 
         return {
-            "role": message.role,
-            "content": [self._part_to_anthropic(p) for p in (message.content or [])],
+            "role": record.role,
+            "content": [self._part_to_anthropic(p) for p in (record.content or [])],
         }
 
-    # converts a list[TARecord] to the format the Anthropic API format expects
-    def _messages_to_anthropic(self, messages: list[ChatRecord]) -> tuple[str | None, list[dict]]:
+    # converts a list[ChatRecord] to the format the Anthropic API format expects
+    def _records_to_anthropic(self, records: list[ChatRecord]) -> tuple[str | None, list[dict]]:
         system_parts: list[str] = []
         wire: list[dict] = []
         seen_tool_use_ids: set[str] = set()
 
-        for message in messages:
+        for record in records:
             # Anthropic takes the system prompt as a separate parameter
-            if message.role == "system":
-                for part in message.content or []:
+            if record.role == "system":
+                for part in record.content or []:
                     text = part.data.get("text", "") if part.type == "text" else ""
                     if text.strip():
                         system_parts.append(text)
                 continue
 
-            converted = self._message_to_anthropic(message)
+            converted = self._record_to_anthropic(record)
             if converted is None:
                 continue
 
@@ -198,12 +198,12 @@ class AnthropicClient(Client, ClientAsync, Protocol):
             err = getattr(event, "error", None)
             message = getattr(err, "message", None) or str(err or event)
             LOGGER.error(f'api error {message}')
-            return ApiEvent(event_type="done", content=message)
+            return ApiEvent(event_type='error', content=message)
 
-    def get_stream(self, messages: list[ChatRecord], tools: list[dict] | None = None) -> Iterator[ApiEvent]:
+    def get_stream(self, records: list[ChatRecord], tools: list[dict] | None = None) -> Iterator[ApiEvent]:
         ''' calls Anthropic.connection.messages.stream() and converts the MessageStream events to the internal ApiEvent format '''
-        LOGGER.info(f'get_stream with {len(messages)} records and {len(tools) if tools else '0'} tools')
-        system, wire = self._messages_to_anthropic(messages)
+        LOGGER.info(f'get_stream with {len(records)} records and {len(tools) if tools else '0'} tools')
+        system, wire = self._records_to_anthropic(records)
         anthropic_tools = self._to_anthropic_tools(tools)
 
         self.api_kwargs["messages"] = wire
@@ -224,10 +224,10 @@ class AnthropicClient(Client, ClientAsync, Protocol):
 
         yield ApiEvent(event_type="done", content="", tool_calls=list(calls.values()))
 
-    async def get_stream_async(self, messages: list[ChatRecord], tools: list[dict] | None = None) -> AsyncGenerator[ApiEvent]:
+    async def get_stream_async(self, records: list[ChatRecord], tools: list[dict] | None = None) -> AsyncGenerator[ApiEvent]:
         ''' calls Anthropic.connection.messages.stream() and converts the MessageStream events to the internal ApiEvent format '''
-        LOGGER.info(f'get_stream with {len(messages)} records and {len(tools) if tools else '0'} tools')
-        system, wire = self._messages_to_anthropic(messages)
+        LOGGER.info(f'get_stream with {len(records)} records and {len(tools) if tools else '0'} tools')
+        system, wire = self._records_to_anthropic(records)
         anthropic_tools = self._to_anthropic_tools(tools)
 
         self.api_kwargs["messages"] = wire

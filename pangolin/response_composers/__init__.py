@@ -1,7 +1,7 @@
 #Copyright (c) 2026 Gene B. Denney. All Rights Reserved.
 
-from .default_response_composer import DefaultResponseComposer
+from .pangolin_composer import PangolinComposer
 
 __all__ = [
-    'DefaultResponseComposer'
+    'PangolinComposer'
 ]

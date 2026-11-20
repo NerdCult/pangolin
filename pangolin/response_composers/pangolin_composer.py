@@ -8,7 +8,7 @@ from ..core.exceptions import PangolinTypeError, PangolinValueError
 
 LOGGER = logging.getLogger(__name__)
 
-class DefaultResponseComposer(ResponseComposer, ResponseComposerAsync, Protocol):
+class PangolinComposer(ResponseComposer, ResponseComposerAsync, Protocol):
     def __init__(self, client: Client | ClientAsync):
         LOGGER.debug(f'__init__: {client}')
         if not isinstance(client, Client) and not isinstance(client, ClientAsync):
@@ -43,7 +43,7 @@ class DefaultResponseComposer(ResponseComposer, ResponseComposerAsync, Protocol)
         for event in self.client.get_stream(context, tools):
             yield self._handle_api_event(event, tool_calls, content)
 
-        yield AgentMessage(behavior='message', message=ChatRecord(role='assistant', content=[Part(type='text', data={'text': content[0]})] if len(content[0]) > 0 else None, tool_calls=tool_calls))
+        yield AgentMessage(behavior='message', chat_record=ChatRecord(role='assistant', content=[Part(type='text', data={'text': content[0]})] if len(content[0]) > 0 else None, tool_calls=tool_calls))
 
 
     async def process_context_async(self, context: list[ChatRecord], tools: list[dict]):
@@ -58,4 +58,4 @@ class DefaultResponseComposer(ResponseComposer, ResponseComposerAsync, Protocol)
         async for event in self.client.get_stream_async(context, tools):
             yield self._handle_api_event(event, tool_calls, content)
 
-        yield AgentMessage(behavior='message', message=ChatRecord(role='assistant', content=[Part(type='text', data={'text': content[0]})] if len(content[0]) > 0 else None, tool_calls=tool_calls))
+        yield AgentMessage(behavior='message', chat_record=ChatRecord(role='assistant', content=[Part(type='text', data={'text': content[0]})] if len(content[0]) > 0 else None, tool_calls=tool_calls))

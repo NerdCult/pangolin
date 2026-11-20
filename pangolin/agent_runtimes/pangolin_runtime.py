@@ -19,7 +19,7 @@ class PangolinRuntime(AgentRuntime, AgentRuntimeToQueue, AgentRuntimeAsync, Prot
     memory_manager will default to SimpleMemoryManager which only tracks the current session in memory.
     '''
     def __init__(self,
-                 aggregator: ResponseComposer, 
+                 composer: ResponseComposer, 
                  system_prompt: str = '',
                  memory_manager: MemoryManager | None = None,
                  skill_manager: SkillManager | None = None, 
@@ -37,10 +37,10 @@ class PangolinRuntime(AgentRuntime, AgentRuntimeToQueue, AgentRuntimeAsync, Prot
         max_rounds: int = 10 sets the maxiumum rounds the agent can make for a single user message (one round can have multiple tool calls)
         '''
         
-        LOGGER.info(f'__init__: \n{aggregator}\n{system_prompt}\n{memory_manager}\n{skill_manager}\n{toolbox}\n{max_tokens}\n{max_rounds} ')
+        LOGGER.info(f'__init__: \n{composer}\n{system_prompt}\n{memory_manager}\n{skill_manager}\n{toolbox}\n{max_tokens}\n{max_rounds} ')
 
-        if not isinstance(aggregator, ResponseComposer):
-            raise PangolinTypeError('aggregator parameter does not implement ApiAggregator')
+        if not isinstance(composer, ResponseComposer):
+            raise PangolinTypeError('composer parameter does not implement ResponseComposer')
         if memory_manager and not isinstance(memory_manager, MemoryManager):
             raise PangolinTypeError('memory_manager parameter does not implement MemoryManger')
         if skill_manager and not isinstance(skill_manager, SkillManager):
@@ -50,7 +50,7 @@ class PangolinRuntime(AgentRuntime, AgentRuntimeToQueue, AgentRuntimeAsync, Prot
         if guardrail and not isinstance(guardrail, (Guardrail, GuardrailAsync)):
             raise PangolinTypeError('guardrail parameter does not implement Guardrail or GuardrailAsync')
         
-        self.aggregator: ResponseComposer = aggregator
+        self.composer: ResponseComposer = composer
         self.system_prompt: str = system_prompt
         self.memory_manager = memory_manager or SimpleMemoryManager()
         self.skill_manager: SkillManager = skill_manager 
@@ -68,11 +68,11 @@ class PangolinRuntime(AgentRuntime, AgentRuntimeToQueue, AgentRuntimeAsync, Prot
         self.max_tokens = max_tokens
         self.max_rounds = max_rounds
 
-    def _add_context(self, message):
+    def _add_context(self, record):
         '''
         adds a TARecord to the Memory Manger
         '''
-        self.memory_manager.add_context(message)
+        self.memory_manager.add_context(record)
         while True:
             if count_tokens(self._get_context(), self._tools()) > self.max_tokens:
                 LOGGER.debug('trimming context')
@@ -86,8 +86,8 @@ class PangolinRuntime(AgentRuntime, AgentRuntimeToQueue, AgentRuntimeAsync, Prot
         '''
         LOGGER.debug('_get_context')
         system = f'{self.system_prompt}\n{self.skill_manager.skills() if self.skill_manager else ''}'
-        system_prompt_message = ChatRecord(role='system', content=[Part(type='text', data={'text':system})])
-        return [system_prompt_message] + self.memory_manager.get_context()
+        system_prompt_record = ChatRecord(role='system', content=[Part(type='text', data={'text':system})])
+        return [system_prompt_record] + self.memory_manager.get_context()
 
     def _tools(self) -> str | None:
         ''' Get the list of tool schemas '''
@@ -96,54 +96,54 @@ class PangolinRuntime(AgentRuntime, AgentRuntimeToQueue, AgentRuntimeAsync, Prot
     def _handle_agent_message(self, agent_message: AgentMessage, tool_calls: list, blocked_tool_call_ids: list, reason: list):
                 # if the ApiAggregator yields a message event add it to the context and check it for tool_calls
                 if agent_message.behavior == 'message':
-                    LOGGER.info(f'assistant message recieved: {agent_message.message}')
-                    if agent_message.message and self.guardrail:
+                    LOGGER.info(f'assistant message recieved: {agent_message.chat_record}')
+                    if agent_message.chat_record and self.guardrail:
                         ger = self.guardrail.handle_guardrail_event(
                             GuardrailEvent(
                                 event_type='assistant_output',
-                                ta_record=agent_message.message
+                                chat_record=agent_message.chat_record
                             )
                         )
 
                         if ger.event_type == 'deny':
                             raise PangolinGuardRailDenial(f'AgentMessage triggered a Guardrail denial {ger.reason}')
                         if ger.event_type == 'modify':
-                            agent_message.message = ger.ta_record
+                            agent_message.chat_record = ger.chat_record
                             reason['reason'] = ger.reason
                             for rtci in ger.rejected_tool_call_ids or []:
                                 blocked_tool_call_ids.append(rtci)
 
-                    if agent_message.message.tool_calls:
-                        for tc in agent_message.message.tool_calls:
+                    if agent_message.chat_record.tool_calls:
+                        for tc in agent_message.chat_record.tool_calls:
                             tool_calls.append(tc) 
                     
-                    self._add_context(agent_message.message)
+                    self._add_context(agent_message.chat_record)
 
     async def _handle_agent_message_async(self, agent_message: AgentMessage, tool_calls: list, blocked_tool_call_ids: list, reason: list):
                 # if the ApiAggregator yields a message event add it to the context and check it for tool_calls
                 if agent_message.behavior == 'message':
-                    LOGGER.info(f'assistant message recieved: {agent_message.message}')
-                    if agent_message.message and self.guardrail:
+                    LOGGER.info(f'assistant message recieved: {agent_message.chat_record}')
+                    if agent_message.chat_record and self.guardrail:
                         ger = await self.guardrail.handle_guardrail_event_async(
                             GuardrailEvent(
                                 event_type='assistant_output',
-                                ta_record=agent_message.message
+                                chat_record=agent_message.chat_record
                             )
                         )
 
                         if ger.event_type == 'deny':
                             raise PangolinGuardRailDenial(f'AgentMessage triggered a Guardrail denial {ger.reason}')
                         if ger.event_type == 'modify':
-                            agent_message.message = ger.ta_record
+                            agent_message.chat_record = ger.chat_record
                             reason['reason'] = ger.reason
                             for rtci in ger.rejected_tool_call_ids or []:
                                 blocked_tool_call_ids.append(rtci)
 
-                    if agent_message.message.tool_calls:
-                        for tc in agent_message.message.tool_calls:
+                    if agent_message.chat_record.tool_calls:
+                        for tc in agent_message.chat_record.tool_calls:
                             tool_calls.append(tc) 
                     
-                    self._add_context(agent_message.message)
+                    self._add_context(agent_message.chat_record)
 
     def _handle_tool_calls(self, tool_calls: list[ToolCall], blocked_tool_call_ids: list, reason: str) -> None:
         LOGGER.info('making tool calls')
@@ -158,62 +158,63 @@ class PangolinRuntime(AgentRuntime, AgentRuntimeToQueue, AgentRuntimeAsync, Prot
                 calls_to_run.append(tc)
 
         for result in self.toolbox.handle_tool_calls(calls_to_run):
-            tar = ChatRecord(role='tool', content=[Part(type='text', data={'text': result.result})], tool_call_id=result.id)
+            chat_record = ChatRecord(role='tool', content=[Part(type='text', data={'text': result.result})], tool_call_id=result.id)
             if self.guardrail:
                 ger = self.guardrail.handle_guardrail_event(
                     GuardrailEvent(
                         event_type='tool_call_result',
-                        ta_record=tar
+                        chat_record=chat_record
                     )
                 )
                 if ger.event_type == 'modify':
-                    tar = ger.ta_record
+                    chat_record = ger.chat_record
 
-            LOGGER.debug(f'TOOL CALL RESULT {tar.to_json()}')
-            self._add_context(tar)
+            LOGGER.debug(f'TOOL CALL RESULT {chat_record.to_json()}')
+            self._add_context(chat_record)
             
 
-    def _user_message_guardrail_check(self, message: ChatRecord):
+    def _user_message_guardrail_check(self, record: ChatRecord):
         if self.guardrail:
             ger = self.guardrail.handle_guardrail_event(
                 GuardrailEvent(event_type='user_input',
-                               ta_record=message
+                               chat_record=record
                                ))
             
             if ger.event_type == 'deny':
                 raise PangolinGuardRailDenial(f'User Message triggered a Guardrail denial {ger.reason}')
             if ger.event_type == 'modify':
-                self._add_context(ger.ta_record)
+                self._add_context(ger.chat_record)
                 return
 
-        self._add_context(message)
+        self._add_context(record)
     
-    async def _user_message_guardrail_check_async(self, message: ChatRecord):
+    async def _user_message_guardrail_check_async(self, record: ChatRecord):
         if self.guardrail:
             ger = await self.guardrail.handle_guardrail_event_async(
                 GuardrailEvent(event_type='user_input',
-                               ta_record=message
+                               chat_record=record
                                ))
 
             if ger.event_type == 'deny':
                 raise PangolinGuardRailDenial(f'User Message triggered a Guardrail denial {ger.reason}')
             if ger.event_type == 'modify':
-                self._add_context(ger.ta_record)
+                self._add_context(ger.chat_record)
                 return
 
-        self._add_context(message)
+        self._add_context(record)
          
-    def handle_user_message(self, message: ChatRecord) -> Iterator[AgentMessage]:
+    def handle_user_message(self, record: ChatRecord | str) -> Iterator[AgentMessage]:
         ''' Main entry point to start the agentic loop. '''
-
-        if not isinstance(message, ChatRecord):
-            raise PangolinTypeError('message does not implement TARecord')
-        LOGGER.info(f'user message recieved: {message.to_json()}')
+        if isinstance(record, str):
+            record = ChatRecord(role='user', content=[Part(type='text', data={'text': record})])
+        elif not isinstance(record, ChatRecord):
+            raise PangolinTypeError('record does not implement TARecord')
+        LOGGER.info(f'user message recieved: {record.to_json()}')
 
         try:
             if self.guardrail and not isinstance(self.guardrail, Guardrail):
                 raise PangolinValueError('runtime guardrail must implement the non async Guardrail to be used in    the synchorous handle_user_message() call')
-            self._user_message_guardrail_check(message)
+            self._user_message_guardrail_check(record)
 
             for _ in range(self.max_rounds):
                 context = self._get_context() # get the context to send to the api
@@ -221,7 +222,7 @@ class PangolinRuntime(AgentRuntime, AgentRuntimeToQueue, AgentRuntimeAsync, Prot
                 blocked_tool_call_ids = []
                 reason = {'reason': ''}
 
-                for agent_message in self.aggregator.process_context(context, self._tools()):
+                for agent_message in self.composer.process_context(context, self._tools()):
                     self._handle_agent_message(agent_message, tool_calls, blocked_tool_call_ids, reason)
                     yield agent_message
 
@@ -236,20 +237,22 @@ class PangolinRuntime(AgentRuntime, AgentRuntimeToQueue, AgentRuntimeAsync, Prot
         except BaseException as e:
             yield AgentMessage(behavior='error', content=e)
     
-    async def handle_user_message_async(self, message: ChatRecord) -> AsyncGenerator[AgentMessage]:
+    async def handle_user_message_async(self, record: ChatRecord | str) -> AsyncGenerator[AgentMessage]:
         ''' Main entry point to start the agentic loop. '''
         
-        if not isinstance(message, ChatRecord):
+        if isinstance(record, str):
+            record = ChatRecord(role='user', content=[Part(type='text', data={'text': record})])
+        elif not isinstance(record, ChatRecord):
             raise PangolinTypeError('message does not implement TARecord')
-        if not isinstance(self.aggregator, ResponseComposerAsync):
+        if not isinstance(self.composer, ResponseComposerAsync):
             raise PangolinTypeError('Aggregator does not implement ApiAggregatorAsync')
         
-        LOGGER.info(f'user message recieved: {message.to_json()}')
+        LOGGER.info(f'user message recieved: {record.to_json()}')
         try:
             if isinstance(self.guardrail, GuardrailAsync):
-                await self._user_message_guardrail_check_async(message)
+                await self._user_message_guardrail_check_async(record)
             else:
-                await asyncio.to_thread(self._user_message_guardrail_check, message)
+                await asyncio.to_thread(self._user_message_guardrail_check, record)
 
             for _ in range(self.max_rounds):
                 context = self._get_context() # get the context to send to the api
@@ -257,7 +260,7 @@ class PangolinRuntime(AgentRuntime, AgentRuntimeToQueue, AgentRuntimeAsync, Prot
                 blocked_tool_call_ids = []
                 reason = {'reason': ''}
 
-                async for agent_message in self.aggregator.process_context_async(context, self._tools()):
+                async for agent_message in self.composer.process_context_async(context, self._tools()):
                     if isinstance(self.guardrail, GuardrailAsync):
                         await     self._handle_agent_message_async(agent_message, tool_calls, blocked_tool_call_ids,  reason)
                     else:
@@ -275,18 +278,20 @@ class PangolinRuntime(AgentRuntime, AgentRuntimeToQueue, AgentRuntimeAsync, Prot
         except BaseException as e:
             yield AgentMessage(behavior='error', content=e)
         
-    async def handle_user_message_to_queue(self, message: ChatRecord, 
+    async def handle_user_message_to_queue(self, record: ChatRecord | str, 
                              queue: asyncio.Queue[AgentMessage | None], 
                              stop: threading.Event = threading.Event(),
                              done: threading.Event = threading.Event()):
         ''' To ansycio.Queue entry point to start the agentic loop. '''
         
-        if not isinstance(message, ChatRecord):
+        if isinstance(record, str):
+            record = ChatRecord(role='user', content=[Part(type='text', data={'text': record})])
+        elif not isinstance(record, ChatRecord):
             raise PangolinTypeError('message does not implement TARecord')
-        if not isinstance(self.aggregator, ResponseComposerAsync):
+        if not isinstance(self.composer, ResponseComposerAsync):
             raise PangolinTypeError('aggregator does not implement ApiAggregatorAsync')
 
-        LOGGER.info(f'user massege recieved: {message.to_json()}')
+        LOGGER.info(f'user message recieved: {record.to_json()}')
 
         async def task_done():
             await queue.put(None)
@@ -294,9 +299,9 @@ class PangolinRuntime(AgentRuntime, AgentRuntimeToQueue, AgentRuntimeAsync, Prot
 
         try:
             if isinstance(self.guardrail, GuardrailAsync):
-                await self._user_message_guardrail_check_async(message)
+                await self._user_message_guardrail_check_async(record)
             else:
-                await asyncio.to_thread(self._user_message_guardrail_check, message)
+                await asyncio.to_thread(self._user_message_guardrail_check, record)
 
             for _ in range(self.max_rounds):
                 context = self._get_context() # get the context to send to the api
@@ -304,7 +309,7 @@ class PangolinRuntime(AgentRuntime, AgentRuntimeToQueue, AgentRuntimeAsync, Prot
                 blocked_tool_call_ids = []
                 reason = {'reason': ''}
 
-                async for agent_message in self.aggregator.process_context_async(context, self._tools()):
+                async for agent_message in self.composer.process_context_async(context, self._tools()):
                     if isinstance(self.guardrail, GuardrailAsync):
                         await self._handle_agent_message_async(agent_message, tool_calls, blocked_tool_call_ids,  reason)
                     else:

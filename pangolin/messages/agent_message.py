@@ -13,4 +13,4 @@ class AgentMessage:
     ''' ApiEvents are translated to this data class in the ResponseComposer before being passed the AgentRuntime '''
     behavior: agent_message_type
     content: str = '' 
-    message: ChatRecord | None = None
+    chat_record: ChatRecord | None = None
