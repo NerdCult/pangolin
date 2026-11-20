@@ -28,7 +28,7 @@ class DefaultApiAggregator(ApiAggregator, ApiAggregatorAsync, Protocol):
         if event.event_type == "tool_call":
             for tc in event.tool_calls:
                 tool_calls.append(tc)
-            return AgentMessage(behavior='tool_calls', content=tool_calls)
+            return AgentMessage(behavior='tool_calls', content=f'{tool_calls}')
 
         if event.event_type  == "done":
             return AgentMessage( behavior= 'done', content= event.content)
