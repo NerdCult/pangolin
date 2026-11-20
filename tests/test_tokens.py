@@ -1,13 +1,13 @@
 #Copyright (c) 2026 Gene B. Denney. All Rights Reserved.
 
 import pytest
-from pangolin.messages.ta_record import TARecord, Part, ToolCall
+from pangolin.messages.chat_record import ChatRecord, Part, ToolCall
 from pangolin.utils.token_calculator import message_tokens
 
 @pytest.fixture
 def mock_record():
     """A fixture to provide a fake TARecord for testing."""
-    record = TARecord(role='user', content=[Part(type='text', data={'text': 'hello, world!'})])
+    record = ChatRecord(role='user', content=[Part(type='text', data={'text': 'hello, world!'})])
     return record
 
 def test_message_tokens_text(mock_record):
@@ -23,7 +23,7 @@ def test_message_tokens_text(mock_record):
 @pytest.fixture
 def tool_call():
     """A fixture that provides a record with text, an image, and a tool call."""
-    record = TARecord(
+    record = ChatRecord(
         role='assistant',
         content=[
             Part(type='text', data={'text': 'Here is a photo and a tool call.'})

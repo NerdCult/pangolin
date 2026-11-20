@@ -5,7 +5,7 @@ import json, logging
 from typing import Iterator, Protocol
 from ..core.interfaces import Provider, Client, ClientAsync
 from ..core.exceptions import PangolinTypeError
-from ..messages import TARecord, Part, ApiEvent, ToolCall
+from ..messages import ChatRecord, Part, ApiEvent, ToolCall
 
 LOGGER = logging.getLogger(__name__)
 
@@ -37,7 +37,7 @@ class OpenAIClient(Client, ClientAsync, Protocol):
         return {"type": part.type, **part.data}
 
     # convert TARecord to the OpenAI format
-    def _message_to_openai(self, message: TARecord) -> dict:
+    def _message_to_openai(self, message: ChatRecord) -> dict:
         if message.role == "tool":
             return {
                 "role": "tool",
@@ -50,7 +50,7 @@ class OpenAIClient(Client, ClientAsync, Protocol):
         return result
 
     # converts a list[TARecord] to the OpenAI format
-    def _messages_to_openai(self, messages: list[TARecord]):
+    def _messages_to_openai(self, messages: list[ChatRecord]):
         openai_messages = []
         for m in messages:
             openai_messages.append(self._message_to_openai(m))
@@ -102,7 +102,7 @@ class OpenAIClient(Client, ClientAsync, Protocol):
             return ApiEvent(event_type="tool_call", tool_calls=list(calls.values()))
 
     
-    def get_stream(self, messages: list[TARecord], tools: list[dict] | None = None) -> Iterator[ApiEvent]:
+    def get_stream(self, messages: list[ChatRecord], tools: list[dict] | None = None) -> Iterator[ApiEvent]:
         '''
         Calls chat.completeion.create(), yields the chunks as ApiEvents
         '''

@@ -3,7 +3,7 @@
 from typing import Iterator, Protocol, AsyncGenerator
 from anthropic import Anthropic, AsyncAnthropic
 import logging
-from ..messages import TARecord, Part, ApiEvent, ToolCall
+from ..messages import ChatRecord, Part, ApiEvent, ToolCall
 from ..core.interfaces import Client, Provider, ClientAsync
 
 LOGGER = logging.getLogger(__name__)
@@ -43,7 +43,7 @@ class AnthropicClient(Client, ClientAsync, Protocol):
         return {"type": part.type, **part.data}
 
     # converts the ta_record.Message to the format expected by the Anthropic API
-    def _message_to_anthropic(self, message: TARecord) -> dict | None:
+    def _message_to_anthropic(self, message: ChatRecord) -> dict | None:
         if message.role == "system":
             return None
 
@@ -83,7 +83,7 @@ class AnthropicClient(Client, ClientAsync, Protocol):
         }
 
     # converts a list[TARecord] to the format the Anthropic API format expects
-    def _messages_to_anthropic(self, messages: list[TARecord]) -> tuple[str | None, list[dict]]:
+    def _messages_to_anthropic(self, messages: list[ChatRecord]) -> tuple[str | None, list[dict]]:
         system_parts: list[str] = []
         wire: list[dict] = []
         seen_tool_use_ids: set[str] = set()
@@ -200,7 +200,7 @@ class AnthropicClient(Client, ClientAsync, Protocol):
             LOGGER.error(f'api error {message}')
             return ApiEvent(event_type="done", content=message)
 
-    def get_stream(self, messages: list[TARecord], tools: list[dict] | None = None) -> Iterator[ApiEvent]:
+    def get_stream(self, messages: list[ChatRecord], tools: list[dict] | None = None) -> Iterator[ApiEvent]:
         ''' calls Anthropic.connection.messages.stream() and converts the MessageStream events to the internal ApiEvent format '''
         LOGGER.info(f'get_stream with {len(messages)} records and {len(tools) if tools else '0'} tools')
         system, wire = self._messages_to_anthropic(messages)
@@ -224,7 +224,7 @@ class AnthropicClient(Client, ClientAsync, Protocol):
 
         yield ApiEvent(event_type="done", content="", tool_calls=list(calls.values()))
 
-    async def get_stream_async(self, messages: list[TARecord], tools: list[dict] | None = None) -> AsyncGenerator[ApiEvent]:
+    async def get_stream_async(self, messages: list[ChatRecord], tools: list[dict] | None = None) -> AsyncGenerator[ApiEvent]:
         ''' calls Anthropic.connection.messages.stream() and converts the MessageStream events to the internal ApiEvent format '''
         LOGGER.info(f'get_stream with {len(messages)} records and {len(tools) if tools else '0'} tools')
         system, wire = self._messages_to_anthropic(messages)

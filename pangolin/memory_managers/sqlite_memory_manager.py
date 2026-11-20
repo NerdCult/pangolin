@@ -8,7 +8,7 @@ import logging
 from ..core.interfaces.memory_manager import IdTrackedMemoryManger
 from ..core.exceptions import PangolinError
 from ..core.types import ChatSummary
-from ..messages import TARecord, user_record
+from ..messages import ChatRecord, user_record
 
 LOGGER = logging.getLogger(__name__)
 DEFAULT_MAX_TO_RELOAD = 25
@@ -26,7 +26,7 @@ class SQLiteMemoryManager(IdTrackedMemoryManger):
         max_records_to_reload: the maximum records to reload when resuming a session
         '''
         LOGGER.info(f'__init__ {sqlite_folder} {chat_id} {max_records_to_reload}')
-        self.memory: list[TARecord] = []
+        self.memory: list[ChatRecord] = []
         self.chat_id: UUID = chat_id or uuid.uuid4()
         self.max_records_to_reload: int = max_records_to_reload
 
@@ -114,7 +114,7 @@ class SQLiteMemoryManager(IdTrackedMemoryManger):
 
         # add the records to memory
         for r in results or []:
-            self.memory.append(TARecord.from_json(r[0]))
+            self.memory.append(ChatRecord.from_json(r[0]))
 
         LOGGER.debug(f'{len(self.memory)} records reloaded for session {self.chat_id}')
 
@@ -147,11 +147,11 @@ class SQLiteMemoryManager(IdTrackedMemoryManger):
 
         LOGGER.debug(f'summary updated for session {self.chat_id}')
 
-    def get_context(self) -> list[TARecord]:
+    def get_context(self) -> list[ChatRecord]:
         return self.memory
 
     # append a TARecord to the history both in memory and in the database
-    def add_context(self, message: TARecord):
+    def add_context(self, message: ChatRecord):
         self.memory.append(message)
         db_connection = sqlite3.connect(self.db_path)
         cursor = db_connection.cursor()

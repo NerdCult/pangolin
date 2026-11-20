@@ -2,7 +2,7 @@
 
 import pytest
 from pangolin import SimpleMemoryManager
-from pangolin.messages import TARecord, Part, ToolCall
+from pangolin.messages import ChatRecord, Part, ToolCall
 
 @pytest.fixture
 def mock_simple_mm():
@@ -10,7 +10,7 @@ def mock_simple_mm():
 
 def test_simple_memory_manager(mock_simple_mm):    
     part = Part(type='text', data={'text': 'pangolins are cool'})
-    message = TARecord(role='user', content=[part])
+    message = ChatRecord(role='user', content=[part])
     mock_simple_mm.add_context(message)
 
     context = mock_simple_mm.get_context()
@@ -27,13 +27,13 @@ def test_simple_memory_manager(mock_simple_mm):
 
 def test_simple_mm_multi_message(mock_simple_mm):
     part = Part(type='text', data={'text': 'pangolins are cool'})
-    message = TARecord(role='user', content=[part])
+    message = ChatRecord(role='user', content=[part])
 
-    messages = [ TARecord(role='system', content=[Part(type='text', data={'text': 'you are an expert on pangolins'})]), 
+    messages = [ ChatRecord(role='system', content=[Part(type='text', data={'text': 'you are an expert on pangolins'})]), 
                 message,
-                TARecord(role='assistant', content=[Part(type='text', data={'text': 'let me find some pangolin facts for you'})],
+                ChatRecord(role='assistant', content=[Part(type='text', data={'text': 'let me find some pangolin facts for you'})],
                          tool_calls=[ToolCall(id='test id', name='test_call', args={'test_param': 'test_value'})]), 
-                TARecord(role='tool', content=[Part(type='text', data={'text': 'pangolins are in fact cool'})],
+                ChatRecord(role='tool', content=[Part(type='text', data={'text': 'pangolins are in fact cool'})],
                          tool_call_id='test id'), 
     ]
 

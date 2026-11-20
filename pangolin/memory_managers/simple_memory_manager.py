@@ -3,7 +3,7 @@
 import logging
 from ..core.interfaces.memory_manager import MemoryManager
 from ..core.exceptions import PangolinError
-from ..messages import TARecord, user_record
+from ..messages import ChatRecord, user_record
 
 LOGGER = logging.getLogger(__name__)
 
@@ -15,10 +15,10 @@ class SimpleMemoryManager(MemoryManager):
         LOGGER.info('__init__')
         self.memory: list = []
 
-    def get_context(self) -> list[TARecord]:
+    def get_context(self) -> list[ChatRecord]:
         return self.memory
 
-    def add_context(self, message: TARecord):
+    def add_context(self, message: ChatRecord):
         self.memory.append(message)
         LOGGER.debug(f'message added {message}')
 

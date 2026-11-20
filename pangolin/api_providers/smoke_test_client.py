@@ -3,7 +3,7 @@
 import json, logging, copy, asyncio
 from typing import Iterator, Protocol
 from ..core.interfaces import Provider, Client, ClientAsync
-from ..messages import TARecord, Part, ApiEvent, ToolCall
+from ..messages import ChatRecord, Part, ApiEvent, ToolCall
 
 LOGGER = logging.getLogger(__name__)
 

@@ -2,20 +2,20 @@
 
 from typing import Protocol, Iterator, AsyncGenerator, runtime_checkable
 
-from ...messages import TARecord, AgentMessage
+from ...messages import ChatRecord, AgentMessage
 
 @runtime_checkable
-class ApiAggregator(Protocol):
+class ResponseComposer(Protocol):
     '''
     recieves the context and tools schemas from the AgentRuntime, passes to the API Client, and handles the returned ApiEvents; 
     passes deltas through as AgentMessages for responsive user experience
     aggregates the deltas to create TARecords and passes them through for the AgentRuntime to process.
     '''
-    def process_context(self, context: list[TARecord], tools: list[dict]) -> Iterator[AgentMessage]: ...
+    def process_context(self, context: list[ChatRecord], tools: list[dict]) -> Iterator[AgentMessage]: ...
 
 @runtime_checkable
-class ApiAggregatorAsync(Protocol):
+class ResponseComposerAsync(Protocol):
     '''
     Async implementation of ApiAggregator.
     '''
-    async def process_context_async(self, context: list[TARecord], tools: list[dict]) -> AsyncGenerator[AgentMessage]: ...
+    async def process_context_async(self, context: list[ChatRecord], tools: list[dict]) -> AsyncGenerator[AgentMessage]: ...

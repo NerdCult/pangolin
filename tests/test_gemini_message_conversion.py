@@ -2,7 +2,7 @@
 
 import pytest
 from pangolin import GeminiClient
-from pangolin.messages import TARecord, Part, ToolCall
+from pangolin.messages import ChatRecord, Part, ToolCall
 from google import genai
 
 @pytest.fixture
@@ -11,7 +11,7 @@ def mock_gemini_client():
 
 def test_gemini_message(mock_gemini_client):
     part = Part(type='text', data={'text': 'pangolins are cool'})
-    message = TARecord(role='user', content=[part])
+    message = ChatRecord(role='user', content=[part])
 
     gemini_parts = mock_gemini_client._message_to_gemini(message,[])
 
@@ -23,13 +23,13 @@ def test_gemini_message(mock_gemini_client):
 
 def test_gemini_messages(mock_gemini_client):
     part = Part(type='text', data={'text': 'pangolins are cool'})
-    message = TARecord(role='user', content=[part])
+    message = ChatRecord(role='user', content=[part])
 
-    messages = [ TARecord(role='system', content=[Part(type='text', data={'text': 'you are an expert on pangolins'})]), 
+    messages = [ ChatRecord(role='system', content=[Part(type='text', data={'text': 'you are an expert on pangolins'})]), 
                 message,
-                TARecord(role='assistant', content=[Part(type='text', data={'text': 'let me find some pangolin facts for you'})],
+                ChatRecord(role='assistant', content=[Part(type='text', data={'text': 'let me find some pangolin facts for you'})],
                          tool_calls=[ToolCall(id='test id', name='test_call', args={'test_param': 'test_value'})]), 
-                TARecord(role='tool', content=[Part(type='text', data={'text': 'pangolins are in fact cool'})],
+                ChatRecord(role='tool', content=[Part(type='text', data={'text': 'pangolins are in fact cool'})],
                          tool_call_id='test id'), 
                 ]
 

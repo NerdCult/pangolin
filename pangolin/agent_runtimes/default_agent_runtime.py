@@ -2,10 +2,10 @@
 
 from typing import Protocol, Iterator, AsyncGenerator
 import logging, asyncio, threading
-from ..core.interfaces import AgentRuntime, AgentRuntimeAsync, AgentRuntimeToQueue, MemoryManager,SkillManager, Toolbox, ToolboxAdvanced, ApiAggregator, ApiAggregatorAsync, Guardrail, GuardrailAsync
+from ..core.interfaces import AgentRuntime, AgentRuntimeAsync, AgentRuntimeToQueue, MemoryManager,SkillManager, Toolbox, ToolboxAdvanced, ResponseComposer, ResponseComposerAsync, Guardrail, GuardrailAsync
 from ..core.exceptions import PangolinTypeError, PangolinValueError, PangolinGuardRailDenial
 from ..core.types import GuardrailEvent
-from ..messages import TARecord, Part, AgentMessage, ToolCall
+from ..messages import ChatRecord, Part, AgentMessage, ToolCall
 from ..utils import count_tokens
 from ..memory_managers import SimpleMemoryManager
 
@@ -19,7 +19,7 @@ class DefaultAgentRuntime(AgentRuntime, AgentRuntimeToQueue, AgentRuntimeAsync, 
     memory_manager will default to SimpleMemoryManager which only tracks the current session in memory.
     '''
     def __init__(self,
-                 aggregator: ApiAggregator, 
+                 aggregator: ResponseComposer, 
                  system_prompt: str = '',
                  memory_manager: MemoryManager | None = None,
                  skill_manager: SkillManager | None = None, 
@@ -39,7 +39,7 @@ class DefaultAgentRuntime(AgentRuntime, AgentRuntimeToQueue, AgentRuntimeAsync, 
         
         LOGGER.info(f'__init__: \n{aggregator}\n{system_prompt}\n{memory_manager}\n{skill_manager}\n{toolbox}\n{max_tokens}\n{max_rounds} ')
 
-        if not isinstance(aggregator, ApiAggregator):
+        if not isinstance(aggregator, ResponseComposer):
             raise PangolinTypeError('aggregator parameter does not implement ApiAggregator')
         if memory_manager and not isinstance(memory_manager, MemoryManager):
             raise PangolinTypeError('memory_manager parameter does not implement MemoryManger')
@@ -50,7 +50,7 @@ class DefaultAgentRuntime(AgentRuntime, AgentRuntimeToQueue, AgentRuntimeAsync, 
         if guardrail and not isinstance(guardrail, (Guardrail, GuardrailAsync)):
             raise PangolinTypeError('guardrail parameter does not implement Guardrail or GuardrailAsync')
         
-        self.aggregator: ApiAggregator = aggregator
+        self.aggregator: ResponseComposer = aggregator
         self.system_prompt: str = system_prompt
         self.memory_manager = memory_manager or SimpleMemoryManager()
         self.skill_manager: SkillManager = skill_manager 
@@ -86,7 +86,7 @@ class DefaultAgentRuntime(AgentRuntime, AgentRuntimeToQueue, AgentRuntimeAsync, 
         '''
         LOGGER.debug('_get_context')
         system = f'{self.system_prompt}\n{self.skill_manager.skills() if self.skill_manager else ''}'
-        system_prompt_message = TARecord(role='system', content=[Part(type='text', data={'text':system})])
+        system_prompt_message = ChatRecord(role='system', content=[Part(type='text', data={'text':system})])
         return [system_prompt_message] + self.memory_manager.get_context()
 
     def _tools(self) -> str | None:
@@ -150,7 +150,7 @@ class DefaultAgentRuntime(AgentRuntime, AgentRuntimeToQueue, AgentRuntimeAsync, 
         calls_to_run = []
         for tc in tool_calls:
             if tc.id in blocked_tool_call_ids:
-                self._add_context(TARecord(
+                self._add_context(ChatRecord(
                     role='tool', 
                     content=[Part(type='text', data={'text': reason})],
                     tool_call_id=tc.id))
@@ -158,7 +158,7 @@ class DefaultAgentRuntime(AgentRuntime, AgentRuntimeToQueue, AgentRuntimeAsync, 
                 calls_to_run.append(tc)
 
         for result in self.toolbox.handle_tool_calls(calls_to_run):
-            tar = TARecord(role='tool', content=[Part(type='text', data={'text': result.result})], tool_call_id=result.id)
+            tar = ChatRecord(role='tool', content=[Part(type='text', data={'text': result.result})], tool_call_id=result.id)
             if self.guardrail:
                 ger = self.guardrail.handle_guardrail_event(
                     GuardrailEvent(
@@ -173,7 +173,7 @@ class DefaultAgentRuntime(AgentRuntime, AgentRuntimeToQueue, AgentRuntimeAsync, 
             self._add_context(tar)
             
 
-    def _user_message_guardrail_check(self, message: TARecord):
+    def _user_message_guardrail_check(self, message: ChatRecord):
         if self.guardrail:
             ger = self.guardrail.handle_guardrail_event(
                 GuardrailEvent(event_type='user_input',
@@ -188,7 +188,7 @@ class DefaultAgentRuntime(AgentRuntime, AgentRuntimeToQueue, AgentRuntimeAsync, 
 
         self._add_context(message)
     
-    async def _user_message_guardrail_check_async(self, message: TARecord):
+    async def _user_message_guardrail_check_async(self, message: ChatRecord):
         if self.guardrail:
             ger = await self.guardrail.handle_guardrail_event_async(
                 GuardrailEvent(event_type='user_input',
@@ -203,10 +203,10 @@ class DefaultAgentRuntime(AgentRuntime, AgentRuntimeToQueue, AgentRuntimeAsync, 
 
         self._add_context(message)
          
-    def handle_user_message(self, message: TARecord) -> Iterator[AgentMessage]:
+    def handle_user_message(self, message: ChatRecord) -> Iterator[AgentMessage]:
         ''' Main entry point to start the agentic loop. '''
 
-        if not isinstance(message, TARecord):
+        if not isinstance(message, ChatRecord):
             raise PangolinTypeError('message does not implement TARecord')
         LOGGER.info(f'user message recieved: {message.to_json()}')
 
@@ -236,12 +236,12 @@ class DefaultAgentRuntime(AgentRuntime, AgentRuntimeToQueue, AgentRuntimeAsync, 
         except BaseException as e:
             yield AgentMessage(behavior='error', content=e)
     
-    async def handle_user_message_async(self, message: TARecord) -> AsyncGenerator[AgentMessage]:
+    async def handle_user_message_async(self, message: ChatRecord) -> AsyncGenerator[AgentMessage]:
         ''' Main entry point to start the agentic loop. '''
         
-        if not isinstance(message, TARecord):
+        if not isinstance(message, ChatRecord):
             raise PangolinTypeError('message does not implement TARecord')
-        if not isinstance(self.aggregator, ApiAggregatorAsync):
+        if not isinstance(self.aggregator, ResponseComposerAsync):
             raise PangolinTypeError('Aggregator does not implement ApiAggregatorAsync')
         
         LOGGER.info(f'user message recieved: {message.to_json()}')
@@ -275,15 +275,15 @@ class DefaultAgentRuntime(AgentRuntime, AgentRuntimeToQueue, AgentRuntimeAsync, 
         except BaseException as e:
             yield AgentMessage(behavior='error', content=e)
         
-    async def handle_user_message_to_queue(self, message: TARecord, 
+    async def handle_user_message_to_queue(self, message: ChatRecord, 
                              queue: asyncio.Queue[AgentMessage | None], 
                              stop: threading.Event = threading.Event(),
                              done: threading.Event = threading.Event()):
         ''' To ansycio.Queue entry point to start the agentic loop. '''
         
-        if not isinstance(message, TARecord):
+        if not isinstance(message, ChatRecord):
             raise PangolinTypeError('message does not implement TARecord')
-        if not isinstance(self.aggregator, ApiAggregatorAsync):
+        if not isinstance(self.aggregator, ResponseComposerAsync):
             raise PangolinTypeError('aggregator does not implement ApiAggregatorAsync')
 
         LOGGER.info(f'user massege recieved: {message.to_json()}')

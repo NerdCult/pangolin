@@ -3,7 +3,7 @@
 import logging
 from ..core.interfaces import Guardrail
 from ..core.types import GuardrailEvent, GuardrailEventResponse
-from ..messages import ToolCallResult, TARecord, Part
+from ..messages import ToolCallResult, ChatRecord, Part
 
 LOGGER = logging.getLogger(__name__)
 

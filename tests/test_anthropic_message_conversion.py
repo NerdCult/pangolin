@@ -3,7 +3,7 @@
 import pytest
 from anthropic import Anthropic
 from pangolin import AnthropicClient
-from pangolin.messages import TARecord, Part, ToolCall
+from pangolin.messages import ChatRecord, Part, ToolCall
 
 @pytest.fixture
 def mock_anthropic_client():
@@ -20,7 +20,7 @@ def test_anthropic_message(mock_anthropic_client):
     assert 'text' in anth_part.keys()
     assert anth_part['text'] == 'pangolins are cool'
 
-    message = TARecord(role='user', content=[part])
+    message = ChatRecord(role='user', content=[part])
 
     anth_message = mock_anthropic_client._message_to_anthropic(message)
 
@@ -42,13 +42,13 @@ def test_anthropic_message(mock_anthropic_client):
 def test_anthropic_messages(mock_anthropic_client):
     part = Part(type='text', data={'text': 'pangolins are cool'})
 
-    message = TARecord(role='user', content=[part])
+    message = ChatRecord(role='user', content=[part])
     
-    messages = [ TARecord(role='system', content=[Part(type='text', data={'text': 'you are an expert on pangolins'})]), 
+    messages = [ ChatRecord(role='system', content=[Part(type='text', data={'text': 'you are an expert on pangolins'})]), 
                 message,
-                TARecord(role='assistant', content=[Part(type='text', data={'text': 'let me find some pangolin facts for you'})],
+                ChatRecord(role='assistant', content=[Part(type='text', data={'text': 'let me find some pangolin facts for you'})],
                          tool_calls=[ToolCall(id='test id', name='test_call', args={'test_param': 'test_value'})]), 
-                TARecord(role='tool', content=[Part(type='text', data={'text': 'pangolins are in fact cool'})],
+                ChatRecord(role='tool', content=[Part(type='text', data={'text': 'pangolins are in fact cool'})],
                          tool_call_id='test id'), 
                 ]
 
