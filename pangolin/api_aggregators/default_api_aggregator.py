@@ -15,12 +15,13 @@ class DefaultApiAggregator(ApiAggregator, ApiAggregatorAsync, Protocol):
             raise PangolinTypeError('ApiAggregator client param must implement either Client or ClientAsync')
         self.client: Client | ClientAsync = client
 
-    def _handle_api_event(self, event: ApiEvent, tool_calls: list) -> AgentMessage:
+    def _handle_api_event(self, event: ApiEvent, tool_calls: list, reply_accumulator: list[str]) -> AgentMessage:
         if event.event_type == "thinking":
             return AgentMessage(behavior= 'thinking', content= event.content)
 
         # the LLM responses are consolidated as they come in so a complete TARecord content can beoutput after the stream ends
         if event.event_type == "replying":
+            reply_accumulator[0] += event.content
             return AgentMessage(behavior='replying', content= event.content)
 
         # Tool calls are assembled in the api_provider.Client implementation and can be API specific
@@ -34,27 +35,27 @@ class DefaultApiAggregator(ApiAggregator, ApiAggregatorAsync, Protocol):
 
     def process_context(self, context: list[TARecord], tools: list[dict]):
         LOGGER.info(f'processing context with {len(context)} records and {len(tools) if tools else '0'}tools')
-        content = ""
+        content = [""]
         tool_calls = []
 
         # Get the ApiEvent stream from the api_providers.Client implementation.
         # ApiEvents can be partials of the LLM out put they are yielded as they arrive for responsive UI
         for event in self.client.get_stream(context, tools):
-            yield self._handle_api_event(event, tool_calls)
+            yield self._handle_api_event(event, tool_calls, content)
 
-        yield AgentMessage(behavior='message', message=TARecord(role='assistant', content=[Part(type='text', data={'text': content})] if content else None, tool_calls=tool_calls))
+        yield AgentMessage(behavior='message', message=TARecord(role='assistant', content=[Part(type='text', data={'text': content[0]})] if len(content[0]) > 0 else None, tool_calls=tool_calls))
 
 
     async def process_context_async(self, context: list[TARecord], tools: list[dict]):
         LOGGER.info(f'processing context with {len(context)} records and {len(tools) if tools else '0'}tools')
         if not isinstance(self.client, ClientAsync):
              raise PangolinValueError('Client does not implement ClientAsync')
-        content = ""
+        content = ['']
         tool_calls = []
 
         # Get the ApiEvent stream from the api_providers.Client implementation.
         # ApiEvents can be partials of the LLM out put they are yielded as they arrive for responsive UI
         async for event in self.client.get_stream_async(context, tools):
-            yield self._handle_api_event(event, tool_calls)
+            yield self._handle_api_event(event, tool_calls, content)
 
-        yield AgentMessage(behavior='message', message=TARecord(role='assistant', content=[Part(type='text', data={'text': content})] if content else None, tool_calls=tool_calls))
+        yield AgentMessage(behavior='message', message=TARecord(role='assistant', content=[Part(type='text', data={'text': content[0]})] if len(content[0]) > 0 else None, tool_calls=tool_calls))

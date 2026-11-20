@@ -1,7 +1,7 @@
 #Copyright (c) 2026 Gene B. Denney. All Rights Reserved.
 
 from .agent_runtime import AgentRuntime, AgentRuntimeToQueue, AgentRuntimeAsync
-from .api_aggrerator import ApiAggregator, ApiAggregatorAsync
+from .api_aggregator import ApiAggregator, ApiAggregatorAsync
 from .client import Client, ClientAsync
 from .memory_manager import MemoryManager
 from .provider import Provider

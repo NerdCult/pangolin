@@ -7,15 +7,15 @@ from ...messages import TARecord, AgentMessage
 @runtime_checkable
 class ApiAggregator(Protocol):
     '''
-    recieves the context and tools schems from the AgentRuntime, passes to the API Client, and handles the returned ApiEvents; 
-    passes deltas through as AgentMessages for responsive user experinece
+    recieves the context and tools schemas from the AgentRuntime, passes to the API Client, and handles the returned ApiEvents; 
+    passes deltas through as AgentMessages for responsive user experience
     aggregates the deltas to create TARecords and passes them through for the AgentRuntime to process.
     '''
-    def process_context(self, context: list[TARecord]) -> Iterator[AgentMessage]: ...
+    def process_context(self, context: list[TARecord], tools: list[dict]) -> Iterator[AgentMessage]: ...
 
 @runtime_checkable
 class ApiAggregatorAsync(Protocol):
     '''
     Async implementation of ApiAggregator.
     '''
-    async def process_context_async(self, context: list[TARecord]) -> AsyncGenerator[AgentMessage]: ...
+    async def process_context_async(self, context: list[TARecord], tools: list[dict]) -> AsyncGenerator[AgentMessage]: ...
