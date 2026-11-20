@@ -2,7 +2,7 @@
 
 from .cli import cli, cli_queue, cli_async
 from .api_providers import  OpenAIProvider, OpenAIClient, AnthropicProvider, AnthropicClient, GeminiProvider, GeminiClient
-from .agent_runtimes import DefaultAgentRuntime
+from .agent_runtimes import PangolinRuntime
 from .toolboxes import BasicToolbox, AdvancedToolbox
 from .skill_managers import AdvancedSkillManager, SimpleSkillManager
 from .guardrails import DefaultGuardrail
@@ -24,7 +24,7 @@ __all__ = [
     'OpenAIClient', 
     'AnthropicProvider', 
     'AnthropicClient',
-    'DefaultAgentRuntime',
+    'PangolinRuntime',
     'DefaultResponseComposer',
     'DefaultGuardrail',
     'BasicToolbox',
