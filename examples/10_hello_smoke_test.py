@@ -1,6 +1,6 @@
 #Copyright (c) 2026 Gene B. Denney. All Rights Reserved.
 
-from pangolin import cli, AdvancedToolbox, BasicToolbox, AdvancedSkillManager,  SQLiteMemoryManager, smoke_test_runtime
+from pangolin import cli, PangolinToolbox, BasicToolbox, AdvancedSkillManager,  SQLiteMemoryManager, smoke_test_runtime
 from uuid import uuid4
 import logging
 

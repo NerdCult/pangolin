@@ -4,7 +4,7 @@ from colorama import Fore, init
 from pynput import keyboard
 import asyncio, threading
 from .core.interfaces import AgentRuntime, AgentRuntimeToQueue, AgentRuntimeAsync
-from .messages.ta_record import user_record
+from .messages.chat_record import user_record
 init(autoreset=True)
 
 def cli(session: AgentRuntime):

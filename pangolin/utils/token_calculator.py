@@ -2,7 +2,7 @@
 
 import json
 from typing import Callable
-from ..messages import TARecord
+from ..messages import ChatRecord
 
 Counter = Callable[[str], int]
 
@@ -11,7 +11,7 @@ def estimate_tokens(text: str) -> int:
     """~4 chars per token. Works for any model, accurate to roughly 10-20%."""
     return (len(text) + 3) // 4
 
-def message_tokens(record: TARecord, counter: Counter = estimate_tokens,
+def message_tokens(record: ChatRecord, counter: Counter = estimate_tokens,
                    per_message_overhead: int = 4, image_tokens: int = 1_600) -> int:
     """Estimate tokens for a single message."""
     n = per_message_overhead
@@ -26,7 +26,7 @@ def message_tokens(record: TARecord, counter: Counter = estimate_tokens,
         n += counter(call.name) + counter(json.dumps(call.args or {}, default=str))
     return n
 
-def count_tokens(messages: list[TARecord], tools: list[dict] | None = None,
+def count_tokens(messages: list[ChatRecord], tools: list[dict] | None = None,
                  counter: Counter = estimate_tokens, **kwargs) -> int:
     """Estimate total tokens for a list of messages plus optional tool schemas.
     kwargs are passed through to message_tokens (per_message_overhead, image_tokens).

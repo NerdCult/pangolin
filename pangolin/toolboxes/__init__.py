@@ -1,9 +1,9 @@
 #Copyright (c) 2026 Gene B. Denney. All Rights Reserved.
 
-from .advanced_toolbox import AdvancedToolbox
+from .pangolin_toolbox import PangolinToolbox
 from .basic_toolbox import BasicToolbox
 
 __all__=[
-    'AdvancedToolbox',
+    'PangolinToolbox',
     'BasicToolbox'
 ]

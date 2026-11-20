@@ -2,18 +2,18 @@
 
 from typing import Protocol, Iterator, AsyncGenerator, runtime_checkable
 from ...messages.api_event import ApiEvent
-from ...messages.ta_record import TARecord
+from ...messages.chat_record import ChatRecord
 
 @runtime_checkable 
 class Client(Protocol):
     ''' provides interaction with the api for chat completions. 
-        Must accept a list of Pangolin TARecords and convert to the expected api format.
+        Must accept a list of Pangolin ChatRecords and convert to the expected api format.
         Must return an Iterator of the Pangolin ApiEvent'''
-    def get_stream(self, messages: list[TARecord], tools: list[dict] | None = None) -> Iterator[ApiEvent]: ...
+    def get_stream(self, records: list[ChatRecord], tools: list[dict] | None = None) -> Iterator[ApiEvent]: ...
 
 @runtime_checkable 
 class ClientAsync(Protocol):
     ''' provides interaction with the api for chat completions using the AsyncOpenAI.Client. 
-        Must accept a list of Pangolin TARecords and convert to the expected api format.
+        Must accept a list of Pangolin ChatRecords and convert to the expected api format.
         Must return an AsyncGenerator of the Pangolin ApiEvent'''
-    async def get_stream_async(self, messages: list[TARecord], tools: list[dict] | None = None) -> AsyncGenerator[ApiEvent]: ...
+    async def get_stream_async(self, records: list[ChatRecord], tools: list[dict] | None = None) -> AsyncGenerator[ApiEvent]: ...

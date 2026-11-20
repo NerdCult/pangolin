@@ -2,11 +2,11 @@
 
 from .cli import cli, cli_queue, cli_async
 from .api_providers import  OpenAIProvider, OpenAIClient, AnthropicProvider, AnthropicClient, GeminiProvider, GeminiClient
-from .agent_runtimes import DefaultAgentRuntime
-from .toolboxes import BasicToolbox, AdvancedToolbox
+from .agent_runtimes import PangolinRuntime
+from .toolboxes import BasicToolbox, PangolinToolbox
 from .skill_managers import AdvancedSkillManager, SimpleSkillManager
 from .guardrails import DefaultGuardrail
-from.api_aggregators import DefaultApiAggregator
+from.response_composers import PangolinComposer
 from .utils import copy_built_in_skills, copy_built_in_tools,create_openai_client, create_anthropic_client, create_gemini_client
 from .agent_runtimes import anthropic_agent_runtime, gemini_agent_runtime, openai_agent_runtime, smoke_test_runtime
 from .memory_managers import SQLiteMemoryManager, SimpleMemoryManager
@@ -24,11 +24,11 @@ __all__ = [
     'OpenAIClient', 
     'AnthropicProvider', 
     'AnthropicClient',
-    'DefaultAgentRuntime',
-    'DefaultApiAggregator',
+    'PangolinRuntime',
+    'PangolinComposer',
     'DefaultGuardrail',
     'BasicToolbox',
-    'AdvancedToolbox',
+    'PangolinToolbox',
     'copy_built_in_tools',
     'copy_built_in_skills',
     'AdvancedSkillManager', 

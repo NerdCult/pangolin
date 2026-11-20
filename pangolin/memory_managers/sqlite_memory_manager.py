@@ -8,10 +8,11 @@ import logging
 from ..core.interfaces.memory_manager import IdTrackedMemoryManger
 from ..core.exceptions import PangolinError
 from ..core.types import ChatSummary
-from ..messages import TARecord, user_record
+from ..messages import ChatRecord
+from ..utils import message_tokens
 
 LOGGER = logging.getLogger(__name__)
-DEFAULT_MAX_TO_RELOAD = 25
+DEFAULT_MAX_TO_RELOAD = 8000
 
 class SQLiteMemoryManager(IdTrackedMemoryManger):
     '''
@@ -19,16 +20,16 @@ class SQLiteMemoryManager(IdTrackedMemoryManger):
     An in-memory list of TARecords is used to maintain what gets provided to AgentRuntime.
     The sqlite database is for persitence after restart.
     '''
-    def __init__(self, sqlite_folder: str = f'{os.getcwd()}/db', chat_id: UUID | None = None, max_records_to_reload: int = DEFAULT_MAX_TO_RELOAD):
+    def __init__(self, sqlite_folder: str = f'{os.getcwd()}/db', chat_id: UUID | None = None, reload_token_limit: int = DEFAULT_MAX_TO_RELOAD):
         '''
         sqlite_path: the folder where the database should be created. default is current working directory /db. the file created is ta_records.db
         chat_id: can be provided to resume a session or one is created.
-        max_records_to_reload: the maximum records to reload when resuming a session
+        reload_token_limit: the maximum tokens to reload when resuming a session
         '''
-        LOGGER.info(f'__init__ {sqlite_folder} {chat_id} {max_records_to_reload}')
-        self.memory: list[TARecord] = []
+        LOGGER.info(f'__init__ {sqlite_folder} {chat_id} {reload_token_limit}')
+        self.memory: list[ChatRecord] = []
         self.chat_id: UUID = chat_id or uuid.uuid4()
-        self.max_records_to_reload: int = max_records_to_reload
+        self.reload_token_limit: int = reload_token_limit
 
         Path(sqlite_folder).mkdir(parents=True, exist_ok=True)
         self.db_path = f'{sqlite_folder}/ta_records.db'
@@ -64,6 +65,7 @@ class SQLiteMemoryManager(IdTrackedMemoryManger):
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 chat_id TEXT,
                 dtg DATE,
+                token_count INTEGER DEFAULT 0,
                 data JSON
             );
         ''')
@@ -98,25 +100,54 @@ class SQLiteMemoryManager(IdTrackedMemoryManger):
         cursor.close()
 
     # load an existing chat history based on the chat_id
-    def _reload(self,):
-        self.memory.clear()
+    def _reload(self):
+        '''Load only the ChatRecords that fit within the token budget using SQL.
+        Uses cumulative token count from the end (newest first).
+        '''
         db_connection = sqlite3.connect(self.db_path)
         cursor = db_connection.cursor()
-        cursor.execute('''
-            SELECT data FROM chat_records 
-            WHERE chat_id = ? 
-            ORDER BY dtg DESC 
-            LIMIT ?
-        ''', (f'{self.chat_id.hex}', self.max_records_to_reload))
+        
+        try:
+            # This query finds the oldest record we can include without exceeding max_tokens
+            cursor.execute(
+                """
+                SELECT data FROM chat_records 
+                WHERE chat_id = ? 
+                  AND id >= (
+                      SELECT MIN(id) FROM (
+                          SELECT id, 
+                                 SUM(token_count) OVER (ORDER BY id DESC) as cum_tokens
+                          FROM chat_records 
+                          WHERE chat_id = ?
+                          ORDER BY id DESC
+                      ) 
+                      WHERE cum_tokens <= ?
+                  )
+                ORDER BY id ASC
+                """,
+                (f'{self.chat_id.hex}', f'{self.chat_id.hex}', self.reload_token_limit)
+            )
+            
+            rows = cursor.fetchall()
 
-        results = cursor.fetchall()
-        results.reverse() # reverse the list to get it sorted asending by time
-
-        # add the records to memory
-        for r in results or []:
-            self.memory.append(TARecord.from_json(r[0]))
-
-        LOGGER.debug(f'{len(self.memory)} records reloaded for session {self.chat_id}')
+            LOGGER.debug(f'{rows} rows loaded')
+            
+            self.memory = [ChatRecord.from_json(row[0]) for row in rows]
+            
+            # Keep your existing safety guard
+            if self.memory and self.memory[0].role != 'user':
+                LOGGER.info("Reloaded context did not start with user message, trimming...")
+                self.trim_context()
+                
+            total_tokens = sum(r.token_count for r in self.memory) if hasattr(self.memory[0], 'token_count') else '?'
+            LOGGER.debug(f"Reloaded {len(self.memory)} records (~{total_tokens} tokens)")
+            
+        except Exception as e:
+            LOGGER.error(f"Failed to reload chat history: {e}")
+            self.memory = []
+        finally:
+            cursor.close()
+            db_connection.close()
 
     # update current chat summary with the last time it was used
     def _update_chat_summary_last_used(self):
@@ -147,23 +178,24 @@ class SQLiteMemoryManager(IdTrackedMemoryManger):
 
         LOGGER.debug(f'summary updated for session {self.chat_id}')
 
-    def get_context(self) -> list[TARecord]:
+    def get_context(self) -> list[ChatRecord]:
         return self.memory
 
-    # append a TARecord to the history both in memory and in the database
-    def add_context(self, message: TARecord):
-        self.memory.append(message)
+    # append a ChatRecord to the history both in memory and in the database
+    def add_context(self, record: ChatRecord):
+        self.memory.append(record)
+        tokens = message_tokens(record)
         db_connection = sqlite3.connect(self.db_path)
         cursor = db_connection.cursor()
         cursor.execute('''
-            INSERT INTO chat_records (chat_id, dtg, data)
-            VALUES (?, ?, ?)
-        ''', (f'{self.chat_id.hex}', datetime.now().isoformat(), message.to_json()))
+            INSERT INTO chat_records (chat_id, dtg, token_count, data)
+            VALUES (?, ?, ?, ?)
+        ''', (f'{self.chat_id.hex}', datetime.now().isoformat(), tokens, record.to_json()))
 
         db_connection.commit()
         cursor.close()
 
-        LOGGER.debug(f'message added to session {self.chat_id} {message}')
+        LOGGER.debug(f'message added to session {self.chat_id} {record}')
         self._update_chat_summary_last_used()
 
     # remove the oldest record from memory and return and tool call ids popped

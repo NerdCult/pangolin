@@ -3,14 +3,14 @@
 from dataclasses import dataclass
 from dataclasses_json import dataclass_json
 from typing import Literal
-from .ta_record import TARecord
+from .chat_record import ChatRecord
 
 agent_message_type = Literal['thinking', 'replying', 'tool_calls', 'message', 'done', 'error', 'guardrail']
 
 @dataclass_json
 @dataclass
 class AgentMessage:
-    ''' ApiEvents are translated to this data class in the ApiAggregator before being passed the AgentRuntime '''
+    ''' ApiEvents are translated to this data class in the ResponseComposer before being passed the AgentRuntime '''
     behavior: agent_message_type
     content: str = '' 
-    message: TARecord | None = None
+    chat_record: ChatRecord | None = None

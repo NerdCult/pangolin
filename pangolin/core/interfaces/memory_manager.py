@@ -1,13 +1,13 @@
 #Copyright (c) 2026 Gene B. Denney. All Rights Reserved.
 
 from typing import Protocol, runtime_checkable
-from ...messages import TARecord
+from ...messages import ChatRecord
 
 @runtime_checkable
 class MemoryManager(Protocol):
     ''' Manages the memory for the session it is attached to. '''
-    def get_context(self) -> list[TARecord]: ...
-    def add_context(self, message: TARecord ): ...
+    def get_context(self) -> list[ChatRecord]: ...
+    def add_context(self, record: ChatRecord ): ...
     def trim_context(self): ...
     ''' can be called by AgentRuntime if system prompt + skills + tools + chat history exceeds the alloted max_tokens size. Memory Managers with persistence can keep long term storage and a short term set that is returned by get_context trim that with this method'''
 

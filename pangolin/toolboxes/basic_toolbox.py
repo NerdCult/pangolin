@@ -21,10 +21,10 @@ BASIC_TOOL_SET = ['browse_files',
 
 class BasicToolbox(Toolbox):
     '''
-    BasicToolbox is the "safe" toolbox. only loading a set of tools provided in the constructor and WITHOUT the ability to create new tools, or load session aware tools.
+    BasicToolbox is the "safe" toolbox. only loading a safe set of tools provided in the pangolin library.
     '''
 
-    def __init__(self, max_results_length: int = DEFAULT_MAX_RESULTS_LENGTH, tool_list: list[str] = BASIC_TOOL_SET):
+    def __init__(self, max_results_length: int = DEFAULT_MAX_RESULTS_LENGTH):
         '''
         max_results_length: caps the tool result size to help control context size
         tool_list: list of tools to load, the default is a list based on the built-in tools and enable web searching, file browsing/reading. 
@@ -32,7 +32,7 @@ class BasicToolbox(Toolbox):
         LOGGER.info(f'__init__ {max_results_length}')
         self.max_results_length = max_results_length
         self.registry: dict = {}
-        self.tool_set = tool_list
+        self.tool_set = BASIC_TOOL_SET
 
     # load tool_set
     def load(self):

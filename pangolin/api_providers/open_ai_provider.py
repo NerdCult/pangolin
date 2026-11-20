@@ -5,7 +5,7 @@ import json, logging
 from typing import Iterator, Protocol
 from ..core.interfaces import Provider, Client, ClientAsync
 from ..core.exceptions import PangolinTypeError
-from ..messages import TARecord, Part, ApiEvent, ToolCall
+from ..messages import ChatRecord, Part, ApiEvent, ToolCall
 
 LOGGER = logging.getLogger(__name__)
 
@@ -26,7 +26,7 @@ class OpenAIClient(Client, ClientAsync, Protocol):
         self.model_name = model_name
         self.api_kwargs =  api_kwargs
 
-    # convert TARecord to the OpenAI format
+    # convert Part to the OpenAI format
     def _part_to_openai(self, part: Part) -> dict:
         if part.type == "text":
             return {"type": "text", "text": part.data.get("text", "")}
@@ -36,24 +36,24 @@ class OpenAIClient(Client, ClientAsync, Protocol):
             return {"type": "audio", "audio": part.data}
         return {"type": part.type, **part.data}
 
-    # convert TARecord to the OpenAI format
-    def _message_to_openai(self, message: TARecord) -> dict:
-        if message.role == "tool":
+    # convert ChatRecord to the OpenAI format
+    def _record_to_openai(self, record: ChatRecord) -> dict:
+        if record.role == "tool":
             return {
                 "role": "tool",
-                "tool_call_id": message.tool_call_id,
-                "content": message.content[0].data.get("text", "") if message.content else None,
+                "tool_call_id": record.tool_call_id,
+                "content": record.content[0].data.get("text", "") if record.content else None,
             }
-        result = {"role": message.role, "content": [self._part_to_openai(p) for p in message.content] if message.content else None}
-        if message.tool_calls:
-            result["tool_calls"] = [{'id': tc.id, 'type': 'function', 'function': {'name': tc.name, 'arguments': json.dumps(tc.args) if isinstance(tc.args, dict) else (tc.args or "{}")}} for tc in message.tool_calls]
+        result = {"role": record.role, "content": [self._part_to_openai(p) for p in record.content] if record.content else None}
+        if record.tool_calls:
+            result["tool_calls"] = [{'id': tc.id, 'type': 'function', 'function': {'name': tc.name, 'arguments': json.dumps(tc.args) if isinstance(tc.args, dict) else (tc.args or "{}")}} for tc in record.tool_calls]
         return result
 
-    # converts a list[TARecord] to the OpenAI format
-    def _messages_to_openai(self, messages: list[TARecord]):
+    # converts a list[ChatRecord] to the OpenAI format
+    def _records_to_openai(self, records: list[ChatRecord]):
         openai_messages = []
-        for m in messages:
-            openai_messages.append(self._message_to_openai(m))
+        for m in records:
+            openai_messages.append(self._record_to_openai(m))
         return openai_messages
 
     def _process_chunk(self, chunk, calls, raw_args):
@@ -102,14 +102,14 @@ class OpenAIClient(Client, ClientAsync, Protocol):
             return ApiEvent(event_type="tool_call", tool_calls=list(calls.values()))
 
     
-    def get_stream(self, messages: list[TARecord], tools: list[dict] | None = None) -> Iterator[ApiEvent]:
+    def get_stream(self, records: list[ChatRecord], tools: list[dict] | None = None) -> Iterator[ApiEvent]:
         '''
         Calls chat.completeion.create(), yields the chunks as ApiEvents
         '''
-        LOGGER.info(f'get_stream with {len(messages)} records and {len(tools) if tools else '0'} tools')
+        LOGGER.info(f'get_stream with {len(records)} records and {len(tools) if tools else '0'} tools')
         stream = self.connection.chat.completions.create(
             model=self.model_name, 
-            messages=self._messages_to_openai(messages),
+            messages=self._records_to_openai(records),
             tools=tools,
             stream=True,
             **self.api_kwargs)
@@ -129,14 +129,14 @@ class OpenAIClient(Client, ClientAsync, Protocol):
         if calls:
             yield self._process_tool(calls, raw_args)
     
-    async def get_stream_async(self, messages, tools = None):
+    async def get_stream_async(self, records, tools = None):
         '''
         Calls chat.completeion.create() on the async OpenAI client, yields the chunks as ApiEvents
         '''
-        LOGGER.info(f'get_stream with {len(messages)} records and {len(tools) if tools else '0'} tools')
+        LOGGER.info(f'get_stream with {len(records)} records and {len(tools) if tools else '0'} tools')
         stream = await self.connection_async.chat.completions.create(
             model=self.model_name, 
-            messages=self._messages_to_openai(messages),
+            messages=self._records_to_openai(records),
             tools=tools,
             stream=True,
             **self.api_kwargs)

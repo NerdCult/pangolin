@@ -3,7 +3,7 @@
 import json, logging, copy, asyncio
 from typing import Iterator, Protocol
 from ..core.interfaces import Provider, Client, ClientAsync
-from ..messages import TARecord, Part, ApiEvent, ToolCall
+from ..messages import ChatRecord, Part, ApiEvent, ToolCall
 
 LOGGER = logging.getLogger(__name__)
 
@@ -34,12 +34,12 @@ class SmokeTestClient(Client, ClientAsync, Protocol):
         self.show_system = show_system
         self.list_tools = list_tools
 
-    def get_stream(self, messages, tools = None):
-        LOGGER.info(f'SMOKE TEST RECEIVED {len(messages)} TARecords {len(tools) if tools else 0} tools')
-        print(f'SMOKE TEST RECEIVED {len(messages)} TARecords {len(tools) if tools else 0} tools')
-        if self.show_system and messages[0].role == 'system':
-            LOGGER.info(f'SYSTEM:\n{messages[0].content[0].data['text']}')
-            print (f'SYSTEM:\n{messages[0].content[0].data['text']}')
+    def get_stream(self, records, tools = None):
+        LOGGER.info(f'SMOKE TEST RECEIVED {len(records)} TARecords {len(tools) if tools else 0} tools')
+        print(f'SMOKE TEST RECEIVED {len(records)} TARecords {len(tools) if tools else 0} tools')
+        if self.show_system and records[0].role == 'system':
+            LOGGER.info(f'SYSTEM:\n{records[0].content[0].data['text']}')
+            print (f'SYSTEM:\n{records[0].content[0].data['text']}')
 
         if self.list_tools and tools:
             LOGGER.info(f'TOOLS:\n{tools}')
@@ -58,12 +58,12 @@ class SmokeTestClient(Client, ClientAsync, Protocol):
                 break
 
 
-    async def get_stream_async(self, messages, tools = None):
-        LOGGER.info(f'SMOKE TEST RECEIVED {len(messages)} TARecords {len(tools) if tools else 0} tools')
-        print(f'SMOKE TEST RECEIVED {len(messages)} TARecords {len(tools) if tools else 0} tools')
-        if self.show_system and messages[0].role == 'system':
-            LOGGER.info(f'SYSTEM:\n{messages[0].content[0].data['text']}')
-            print (f'SYSTEM:\n{messages[0].content[0].data['text']}')
+    async def get_stream_async(self, records, tools = None):
+        LOGGER.info(f'SMOKE TEST RECEIVED {len(records)} TARecords {len(tools) if tools else 0} tools')
+        print(f'SMOKE TEST RECEIVED {len(records)} TARecords {len(tools) if tools else 0} tools')
+        if self.show_system and records[0].role == 'system':
+            LOGGER.info(f'SYSTEM:\n{records[0].content[0].data['text']}')
+            print (f'SYSTEM:\n{records[0].content[0].data['text']}')
 
         if self.list_tools and tools:
             LOGGER.info(f'TOOLS:\n{tools}')

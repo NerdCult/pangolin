@@ -3,7 +3,6 @@
 import logging
 from ..core.interfaces import Guardrail
 from ..core.types import GuardrailEvent, GuardrailEventResponse
-from ..messages import ToolCallResult, TARecord, Part
 
 LOGGER = logging.getLogger(__name__)
 
@@ -20,16 +19,16 @@ class DefaultGuardrail(Guardrail):
             return GuardrailEventResponse(event_type='approve')
         
         if event.event_type == 'assistant_output':
-            if event.ta_record.tool_calls:
+            if event.chat_record.tool_calls:
                 blocked_tool_call_ids = []
-                for tc in event.ta_record.tool_calls:
+                for tc in event.chat_record.tool_calls:
                     if tc.name in self.blocked_tools:
                         blocked_tool_call_ids.append(tc.id)
 
                 ger = GuardrailEventResponse(
                     event_type='modify',
                     reason='tool blocked by the current runtime guardrail policy',
-                    ta_record=event.ta_record,
+                    chat_record=event.chat_record,
                     rejected_tool_call_ids=blocked_tool_call_ids if len(blocked_tool_call_ids) > 0 else None
                 )
                 return ger
