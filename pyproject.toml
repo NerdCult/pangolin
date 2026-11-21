@@ -16,17 +16,23 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-    dataclasses-json
+    "dataclasses-json"
 ]
 
 [project.optional-dependencies]
-openai = ["openai>=1.0.0"]
-anthropic = ["anthropic>=0.3.0"]
-gemini = ["google-generativeai>=0.3.0"]
+openai = ["openai>=2.49.0"]
+anthropic = ["anthropic>=2.9.0"]
+gemini = ["google-genai>=3.3.0"]
+requests = ["requests>=2.34.2"]
+beautifulsoup4 = ["beautifulsoup4>=4.15.0"]
+ddgs = ["ddgs>=9.16.0"]
 all = [
     "pangolin[openai]",
     "pangolin[anthropic]",
-    "pangolin[gemini]"
+    "pangolin[gemini]",
+    "pangolin[requests]",
+    "pangolin[beautifulsoup4]",
+    "pangolin[ddgs]"
 ]
 
 [tool.setuptools.packages.find]

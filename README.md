@@ -20,7 +20,8 @@ The sample below runs a simple command-line chat interface.
 
 
 ```python
-from pangolin import openai_agent_runtime, cli
+from pangolin.api_providers.open_ai_provider import openai_agent_runtime
+from .cli import cli
 
 URL = 'https://api.openai.com/v1'   # or your preferred endpoint
 MODEL = 'gpt-4o-mini'               # or whatever you prefer

@@ -4,7 +4,10 @@ import logging, uuid, base64
 from typing import Iterator, Protocol, AsyncGenerator
 from google import genai
 from google.genai import types
-from ..core.interfaces import Provider, Client, ClientAsync
+from ..core.interfaces import Provider, Client, ClientAsync, MemoryManager, Toolbox, SkillManager, Guardrail
+from ..memory_managers import SimpleMemoryManager
+from ..response_composers import PangolinComposer
+from ..agent_runtimes import PangolinRuntime
 from ..messages import ChatRecord, ApiEvent, ToolCall
 
 LOGGER = logging.getLogger(__name__)
@@ -165,3 +168,31 @@ class GeminiProvider(Provider):
     def make_client(self, model_name: str, **api_kwargs):
         ''' api_kwargs are passed into google.genai.types.GenerateContentConfig() '''
         return GeminiClient(self.client, model_name, **api_kwargs)
+
+def create_gemini_client(model: str, key: str, **api_kwargs):
+    '''helper function to make a GeminiClient'''
+    return GeminiProvider(key).make_client(model, **api_kwargs)
+
+
+def gemini_agent_runtime( 
+                         model: str, 
+                         key: str = 'no key', 
+                         system_prompt: str = '', 
+                         memory_manager: MemoryManager | None = None,
+                         skill_manager: SkillManager | None = None,
+                         toolbox: Toolbox | None = None,
+                         guardrail: Guardrail | None = None,
+                         max_tokens: int = 32_000,
+                         max_rounds: int = 10,
+                         **api_kwargs):
+    ''' helper function to simplify creating an AgentRuntime session with the Gemini api. api_kwargs are passed into types.GenerateContentConfig() system_instructions and tools are set internal and should not be added to api_kwargs. thinking_config defaults to include_thoughts=true but can be set in api_kwargs'''
+    return PangolinRuntime(
+        composer= PangolinComposer(client=create_gemini_client( model=model, key=key, **api_kwargs)),
+        system_prompt=system_prompt,
+        memory_manager=memory_manager or SimpleMemoryManager(),
+        skill_manager=skill_manager,
+        toolbox=toolbox,
+        guardrail=guardrail,
+        max_tokens=max_tokens,
+        max_rounds=max_rounds
+    )

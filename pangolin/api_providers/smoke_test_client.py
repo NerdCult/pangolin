@@ -2,8 +2,11 @@
 
 import json, logging, copy, asyncio
 from typing import Iterator, Protocol
-from ..core.interfaces import Provider, Client, ClientAsync
-from ..messages import ChatRecord, Part, ApiEvent, ToolCall
+from ..core.interfaces import  Client, ClientAsync, MemoryManager, SkillManager, Toolbox, Guardrail
+from ..response_composers import PangolinComposer
+from ..memory_managers import SimpleMemoryManager
+from ..agent_runtimes import PangolinRuntime
+from ..messages import ApiEvent, ToolCall
 
 LOGGER = logging.getLogger(__name__)
 
@@ -81,4 +84,31 @@ class SmokeTestClient(Client, ClientAsync, Protocol):
 
             if next_event.event_type == 'done':
                 break
-        
+
+def create_smoke_test_client(responses: list[ApiEvent] | None = None, show_system: bool = False, list_tools: bool = False):
+    '''helper function to make a SmokeTestClient'''
+    return SmokeTestClient(responses if responses else DEFAULT_SMOKE_TEST_EVENTS, show_system, list_tools)
+
+
+def smoke_test_runtime( 
+                         system_prompt: str = '', 
+                         memory_manager: MemoryManager | None = None,
+                         skill_manager: SkillManager | None = None,
+                         toolbox: Toolbox | None = None,
+                         guardrail: Guardrail | None = None,
+                         max_tokens: int = 32_000,
+                         max_rounds: int = 10,
+                         responses: list[ApiEvent] | None = None,
+                         show_system: bool = False,
+                         list_tools: bool = False,
+                         **api_kwargs):
+    return PangolinRuntime(
+            composer= PangolinComposer(client=create_smoke_test_client(responses, show_system, list_tools)),
+            system_prompt=system_prompt,
+            memory_manager=memory_manager or SimpleMemoryManager(),
+            skill_manager=skill_manager,
+            toolbox=toolbox,
+            guardrail=guardrail,
+            max_tokens=max_tokens,
+            max_rounds=max_rounds
+        )

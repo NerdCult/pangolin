@@ -3,8 +3,11 @@
 from openai import OpenAI, AsyncOpenAI
 import json, logging
 from typing import Iterator, Protocol
-from ..core.interfaces import Provider, Client, ClientAsync
+from ..core.interfaces import Provider, Client, ClientAsync, MemoryManager, SkillManager, Toolbox, Guardrail
 from ..core.exceptions import PangolinTypeError
+from ..response_composers import PangolinComposer
+from ..agent_runtimes import PangolinRuntime
+from ..memory_managers import SimpleMemoryManager
 from ..messages import ChatRecord, Part, ApiEvent, ToolCall
 
 LOGGER = logging.getLogger(__name__)
@@ -181,3 +184,32 @@ class OpenAIProvider(Provider):
         kwargs: passed through the OpenAIClient created
         '''
         return OpenAIClient(self.connection, model_name, **api_kwargs)
+
+
+def create_openai_client(url: str, model: str, key: str, **api_kwargs):
+    ''' helper function to make an OpenAIClient'''
+    return OpenAIProvider(url, key).make_client(model, **api_kwargs)
+
+
+def openai_agent_runtime(url: str, 
+                         model: str, 
+                         key: str = 'no key', 
+                         system_prompt: str = '', 
+                         memory_manager: MemoryManager | None = None,
+                         skill_manager: SkillManager | None = None,
+                         toolbox: Toolbox | None = None,
+                         guardrail: Guardrail | None = None,
+                         max_tokens: int = 32_000,
+                         max_rounds: int = 10,
+                         **api_kwargs):
+    ''' helper function to simplify creating an AgentRuntime session with an OpenAI api. api_kwargs are passed into completions.create() model, messages, tools, and stream are set internal and should not be added to api_kwargs. '''
+    return PangolinRuntime(
+        composer= PangolinComposer(client=create_openai_client(url=url, model=model, key=key, **api_kwargs)),
+        system_prompt=system_prompt,
+        memory_manager=memory_manager or SimpleMemoryManager(),
+        skill_manager=skill_manager,
+        toolbox=toolbox,
+        guardrail=guardrail,
+        max_tokens=max_tokens,
+        max_rounds=max_rounds
+    )

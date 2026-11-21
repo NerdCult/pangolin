@@ -1,4 +1,4 @@
-from pangolin import gemini_agent_runtime
+from pangolin.api_providers.gemini_provider import gemini_agent_runtime
 from .cli import cli
 
 MODEL, KEY = 'gemini-3.1-flash-lite', 'your key' #google provides a free tier API token
