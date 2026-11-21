@@ -1,6 +1,10 @@
 #Copyright (c) 2026 Gene B. Denney. All Rights Reserved.
 
-from openai import OpenAI, AsyncOpenAI
+from ..core.exceptions import PangolinImportError
+try:
+    from openai import OpenAI, AsyncOpenAI
+except:
+    raise PangolinImportError('using openai_provider requires installing the openai library')
 import json, logging
 from typing import Iterator, Protocol
 from ..core.interfaces import Provider, Client, ClientAsync, MemoryManager, SkillManager, Toolbox, Guardrail

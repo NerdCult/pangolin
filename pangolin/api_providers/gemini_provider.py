@@ -1,9 +1,13 @@
 #Copyright (c) 2026 Gene B. Denney. All Rights Reserved.
 
+from ..core.exceptions import PangolinImportError
+try:
+    from google import genai
+    from google.genai import types
+except:
+    raise PangolinImportError('using gemini_provider requires installing the google-genai library')
 import logging, uuid, base64
 from typing import Iterator, Protocol, AsyncGenerator
-from google import genai
-from google.genai import types
 from ..core.interfaces import Provider, Client, ClientAsync, MemoryManager, Toolbox, SkillManager, Guardrail
 from ..memory_managers import SimpleMemoryManager
 from ..response_composers import PangolinComposer

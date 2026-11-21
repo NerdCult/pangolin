@@ -1,7 +1,11 @@
 #Copyright (c) 2026 Gene B. Denney. All Rights Reserved.
 
+from ..core.exceptions import PangolinImportError
+try: 
+    from anthropic import Anthropic, AsyncAnthropic
+except:
+    raise PangolinImportError('using anthropic_provider requires installing the anthropic library')
 from typing import Iterator, Protocol, AsyncGenerator
-from anthropic import Anthropic, AsyncAnthropic
 import logging
 from ..messages import ChatRecord, Part, ApiEvent, ToolCall
 from ..core.interfaces import Client, Provider, ClientAsync, MemoryManager, Toolbox, SkillManager, Guardrail
