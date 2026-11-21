@@ -1,6 +1,8 @@
 #Copyright (c) 2026 Gene B. Denney. All Rights Reserved.
 
-from pangolin import openai_agent_runtime, cli
+from pangolin.api_providers.open_ai_provider import openai_agent_runtime
+#from pangolin import cli # uses the built in low dependency cli
+from cli import cli # more the robust cli included in the examples folder (requires colorama and pynput, and contains cli_async and cli_queue as demos for hooking to the runtime output)
 
 #configure your connection
 

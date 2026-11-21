@@ -1,6 +1,9 @@
 #Copyright (c) 2026 Gene B. Denney. All Rights Reserved.
 
-from pangolin import openai_agent_runtime, cli, SQLiteMemoryManager
+from pangolin.api_providers.open_ai_provider import openai_agent_runtime
+from pangolin.memory_managers.sqlite_memory_manager import SQLiteMemoryManager
+#from pangolin import cli # uses the built in low dependency cli
+from cli import cli # more the robust cli included in the examples folder (requires colorama and pynput, and contains cli_async and cli_queue as demos for hooking to the runtime output)
 from uuid import UUID, uuid4
 
 #configure your connection

@@ -1,10 +1,17 @@
 #Copyright (c) 2026 Gene B. Denney. All Rights Reserved.
 
+from ..core.exceptions import PangolinImportError
+try: 
+    from anthropic import Anthropic, AsyncAnthropic
+except:
+    raise PangolinImportError('using anthropic_provider requires installing the anthropic library')
 from typing import Iterator, Protocol, AsyncGenerator
-from anthropic import Anthropic, AsyncAnthropic
 import logging
 from ..messages import ChatRecord, Part, ApiEvent, ToolCall
-from ..core.interfaces import Client, Provider, ClientAsync
+from ..core.interfaces import Client, Provider, ClientAsync, MemoryManager, Toolbox, SkillManager, Guardrail
+from ..memory_managers import SimpleMemoryManager
+from ..response_composers import PangolinComposer
+from ..agent_runtimes import PangolinRuntime
 
 LOGGER = logging.getLogger(__name__)
 
@@ -278,3 +285,32 @@ class AnthropicProvider(Provider):
 
     def make_client(self, model_name: str, **api_kwargs) -> AnthropicClient:
         return AnthropicClient(self.connection, model_name, max_tokens=self.max_tokens, **api_kwargs)
+
+
+def create_anthropic_client(url: str, model: str, key: str, **api_kwargs):
+    '''helper function to make an AnthropicClient'''
+    return AnthropicProvider(url, key).make_client(model, **api_kwargs)
+
+
+def anthropic_agent_runtime(url: str, 
+                         model: str, 
+                         key: str = 'no key', 
+                         system_prompt: str = '', 
+                         memory_manager: MemoryManager | None = None,
+                         skill_manager: SkillManager | None = None,
+                         toolbox: Toolbox | None = None,
+                         guardrail: Guardrail | None = None, 
+                         max_tokens: int = 32_000,
+                         max_rounds: int = 10,
+                         **api_kwargs):
+    ''' helper function to simplify creating an AgentRuntime session with the Anthropic api. api_kwargs are passed into messages.stream() model, messages, tools, system, and max_tokens are set internal and should not be added to api_kwargs. '''
+    return PangolinRuntime(
+        composer= PangolinComposer(client=create_anthropic_client(url=url, model=model, key=key, **api_kwargs)),
+        system_prompt=system_prompt,
+        memory_manager=memory_manager or SimpleMemoryManager(),
+        skill_manager=skill_manager,
+        toolbox=toolbox,
+        guardrail=guardrail,
+        max_tokens=max_tokens,
+        max_rounds=max_rounds
+    )

@@ -15,7 +15,7 @@ LOGGER = logging.getLogger(__name__)
 class PangolinRuntime(AgentRuntime, AgentRuntimeToQueue, AgentRuntimeAsync, Protocol):
     '''
     default implementation of AgentRuntime.
-    the only required parameter is aggregator: ApiAggregator
+    the only required parameter is composer: ResponseComposer (recommend the PangolinComposer)
     memory_manager will default to SimpleMemoryManager which only tracks the current session in memory.
     '''
     def __init__(self,
@@ -203,7 +203,7 @@ class PangolinRuntime(AgentRuntime, AgentRuntimeToQueue, AgentRuntimeAsync, Prot
 
         self._add_context(record)
          
-    def handle_user_message(self, record: ChatRecord | str) -> Iterator[AgentMessage]:
+    def handle_user_message(self, record: ChatRecord | str, stop: threading.Event = threading.Event()) -> Iterator[AgentMessage]:
         ''' Main entry point to start the agentic loop. '''
         if isinstance(record, str):
             record = ChatRecord(role='user', content=[Part(type='text', data={'text': record})])
@@ -217,12 +217,16 @@ class PangolinRuntime(AgentRuntime, AgentRuntimeToQueue, AgentRuntimeAsync, Prot
             self._user_message_guardrail_check(record)
 
             for _ in range(self.max_rounds):
+                if stop.is_set(): break
+
                 context = self._get_context() # get the context to send to the api
                 tool_calls = [] # initialzed to store tool calls 
                 blocked_tool_call_ids = []
                 reason = {'reason': ''}
 
                 for agent_message in self.composer.process_context(context, self._tools()):
+                    if stop.is_set(): break
+
                     self._handle_agent_message(agent_message, tool_calls, blocked_tool_call_ids, reason)
                     yield agent_message
 
@@ -237,7 +241,7 @@ class PangolinRuntime(AgentRuntime, AgentRuntimeToQueue, AgentRuntimeAsync, Prot
         except BaseException as e:
             yield AgentMessage(behavior='error', content=e)
     
-    async def handle_user_message_async(self, record: ChatRecord | str) -> AsyncGenerator[AgentMessage]:
+    async def handle_user_message_async(self, record: ChatRecord | str, stop: threading.Event = threading.Event()) -> AsyncGenerator[AgentMessage]:
         ''' Main entry point to start the agentic loop. '''
         
         if isinstance(record, str):
@@ -255,12 +259,16 @@ class PangolinRuntime(AgentRuntime, AgentRuntimeToQueue, AgentRuntimeAsync, Prot
                 await asyncio.to_thread(self._user_message_guardrail_check, record)
 
             for _ in range(self.max_rounds):
+                if stop.is_set(): break
+
                 context = self._get_context() # get the context to send to the api
                 tool_calls = [] # initialzed to store tool calls 
                 blocked_tool_call_ids = []
                 reason = {'reason': ''}
 
                 async for agent_message in self.composer.process_context_async(context, self._tools()):
+                    if stop.is_set(): break
+
                     if isinstance(self.guardrail, GuardrailAsync):
                         await     self._handle_agent_message_async(agent_message, tool_calls, blocked_tool_call_ids,  reason)
                     else:
@@ -304,6 +312,8 @@ class PangolinRuntime(AgentRuntime, AgentRuntimeToQueue, AgentRuntimeAsync, Prot
                 await asyncio.to_thread(self._user_message_guardrail_check, record)
 
             for _ in range(self.max_rounds):
+                if stop.is_set(): break
+                
                 context = self._get_context() # get the context to send to the api
                 tool_calls = [] # initialzed to store tool calls 
                 blocked_tool_call_ids = []
