@@ -1,40 +1,42 @@
 [build-system]
-requires = ["setuptools>=61.0.0"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project]
 name = "pangolin"
-version = "0.1.0"
-description = "A lightweight framework for agent runtimes and memory management."
-readme = "README.md"
+version = "0.1.0b1"
+description = "A lightweight, modular, interface based AI Agentic library."
+dynamic = ["readme"]
 requires-python = ">=3.14"
-license = "PolyForm-Noncommercial-1.0.0"
+license = {text = "PolyForm Noncommercial 1.0.0"}
 license-files = ["LICENSE*"]
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: Other/Proprietary License",
     "Operating System :: OS Independent",
 ]
+
 dependencies = [
-    "dataclasses-json"
+    "dataclasses-json>=0.6.0",
 ]
 
 [project.optional-dependencies]
-openai = ["openai>=2.49.0"]
-anthropic = ["anthropic>=2.9.0"]
-gemini = ["google-genai>=3.3.0"]
-requests = ["requests>=2.34.2"]
-beautifulsoup4 = ["beautifulsoup4>=4.15.0"]
-ddgs = ["ddgs>=9.16.0"]
+openai = ["openai>=1.0.0"]
+anthropic = ["anthropic>=0.30.0"]
+gemini = ["google-genai>=3.6.0"]
+requests = ["requests>=2.32.0"]
+beautifulsoup4 = ["beautifulsoup4>=4.12.0"]
+ddgs = ["ddgs>=9.0.0"]
+dev = [
+    "pytest>=8.0.0",
+    "ruff>=0.6.0",
+]
 all = [
-    "pangolin[openai]",
-    "pangolin[anthropic]",
-    "pangolin[gemini]",
-    "pangolin[requests]",
-    "pangolin[beautifulsoup4]",
-    "pangolin[ddgs]"
+    "pangolin[openai,anthropic,gemini,requests,beautifulsoup4,ddgs]"
 ]
 
-[tool.setuptools.packages.find]
-include = ["pangolin*"]
-exclude = ["examples*", "tests*"]
+[tool.hatch.build.targets.wheel]
+packages = ["pangolin"]
+
+[tool.hatch.build.targets.sdist]
+include = ["/pangolin"]

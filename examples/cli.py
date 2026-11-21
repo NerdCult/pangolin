@@ -65,7 +65,7 @@ def cli(session: AgentRuntime):
 
         stop.clear()
 
-        for a in session.handle_user_message(user_record(text=user_input)):
+        for a in session.handle_user_message(user_record(text=user_input), stop):
             printout(a, behaviors)
 
             if stop.is_set(): break
@@ -94,7 +94,7 @@ async def cli_async(session: AgentRuntime):
 
         stop.clear()
 
-        async for a in session.handle_user_message_async(user_record(text=user_input)):
+        async for a in session.handle_user_message_async(user_record(text=user_input), stop):
             printout(a, behaviors)
 
             if stop.is_set(): break

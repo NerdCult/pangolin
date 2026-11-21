@@ -1,27 +1,22 @@
 #Copyright (c) 2026 Gene B. Denney. All Rights Reserved.
 
-import json, os, logging
+import os, logging
 from pathlib import Path
 from ..core.interfaces import SkillManagerSkillMaker
 
 LOGGER = logging.getLogger(__name__)
 
-SKILL_SUFFIXES = ('.md', '.json')
 
 def skill_name_of(skill_name: str) -> str:
     """Normalize a skill name: drop any directory part and a known suffix."""
     name = Path(skill_name).name
-    for suffix in SKILL_SUFFIXES:
-        if name.endswith(suffix):
-            return name[:-len(suffix)]
+    if name.endswith('.md'):
+        return name[:-3]
     return name
 
 def parse_skill(path: Path) -> tuple[str, str]:
-    """Return (description, text) for a .md (front matter) or .json skill."""
+    """Return (description, text) for a .md (front matter)"""
     raw = path.read_text(encoding='utf-8').strip()
-    if path.suffix == '.json':
-        data = json.loads(raw)
-        return data['description'], data['text']
 
     description, body = '', raw
     parts = raw.split('---', 2)

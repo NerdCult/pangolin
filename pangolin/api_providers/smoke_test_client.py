@@ -1,7 +1,7 @@
 #Copyright (c) 2026 Gene B. Denney. All Rights Reserved.
 
-import json, logging, copy, asyncio
-from typing import Iterator, Protocol
+import logging, copy, asyncio
+from typing import Protocol
 from ..core.interfaces import  Client, ClientAsync, MemoryManager, SkillManager, Toolbox, Guardrail
 from ..response_composers import PangolinComposer
 from ..memory_managers import SimpleMemoryManager
@@ -39,14 +39,13 @@ class SmokeTestClient(Client, ClientAsync, Protocol):
 
     def get_stream(self, records, tools = None):
         LOGGER.info(f'SMOKE TEST RECEIVED {len(records)} TARecords {len(tools) if tools else 0} tools')
-        print(f'SMOKE TEST RECEIVED {len(records)} TARecords {len(tools) if tools else 0} tools')
         if self.show_system and records[0].role == 'system':
             LOGGER.info(f'SYSTEM:\n{records[0].content[0].data['text']}')
-            print (f'SYSTEM:\n{records[0].content[0].data['text']}')
+            yield ApiEvent(event_type='replying',content= f'SYSTEM:\n{records[0].content[0].data['text']}')
 
         if self.list_tools and tools:
             LOGGER.info(f'TOOLS:\n{tools}')
-            print(f'TOOLS:\n{tools}')
+            yield ApiEvent(event_type='replying',content= f'TOOLS:\n{tools}')
 
         while True:
             if len(self.responses) ==0:

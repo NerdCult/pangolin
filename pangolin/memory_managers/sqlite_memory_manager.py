@@ -5,7 +5,7 @@ from datetime import datetime
 from uuid import UUID
 from pathlib import Path
 import logging
-from ..core.interfaces.memory_manager import IdTrackedMemoryManger
+from ..core.interfaces.memory_manager import IdTrackedMemoryManager
 from ..core.exceptions import PangolinError
 from ..core.types import ChatSummary
 from ..messages import ChatRecord
@@ -14,7 +14,7 @@ from ..utils import message_tokens
 LOGGER = logging.getLogger(__name__)
 DEFAULT_MAX_TO_RELOAD = 8000
 
-class SQLiteMemoryManager(IdTrackedMemoryManger):
+class SQLiteMemoryManager(IdTrackedMemoryManager):
     '''
     Stores chat histories in a sqlite database by chat id.
     An in-memory list of TARecords is used to maintain what gets provided to AgentRuntime.

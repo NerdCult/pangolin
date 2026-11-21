@@ -44,7 +44,7 @@ def cli(session: AgentRuntime, show_welcome: bool = True):
     '''simple command line interface to use an AgentRuntime. Press ctrl+c to cancel the agent's turn'''
 
     if show_welcome:
-        print ("Welcome to the Pangolin cli, a minimal AI Agentic interface!\nPress ctrl+c to interrupt the agent's turn.\nThe Github repo has variations with colorized output, omitted here to keep dependencies minimal.")
+        print ("Welcome to the Pangolin cli, a minimal AI Agentic interface!\nPress ctrl+c to interrupt the agent's turn.\nThe Github repo examples provides a cli with color coded text, omitted here to keep dependencies minimal.")
 
     while True:
         behaviors = {'thinking': False,
