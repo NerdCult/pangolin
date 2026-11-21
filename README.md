@@ -29,10 +29,10 @@ KEY = 'your-key-here'
 
 #Create a basic instance of AgentRuntime
 # use anthropic_agent_runtime if you want to connect to their api
-runtime = openai_agent_runtime(url=URL, model=MODEL, key=KEY)
+session = openai_agent_runtime(url=URL, model=MODEL, key=KEY)
 
 #Launch the command line interface to interact with the AgentRuntime runtime. output is color-coded green -> user, red -> agent thinking, yellow -> tool calls, blue -> agent reply
-cli(runtime)
+cli(session)
 ```
 
 1. Save this as `hello_pangolin_agent.py` (also available in the examples folder)
