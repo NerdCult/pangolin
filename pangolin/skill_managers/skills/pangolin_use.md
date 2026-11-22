@@ -64,13 +64,13 @@ Async: `async for msg in session.handle_user_message_async(...)`. Queue: `handle
 from pangolin.utils import copy_built_in_tools
 from pangolin.toolboxes import PangolinToolbox
 
-copy_built_in_tools("./tools")  # copies the built-in tool modules; read them before enabling. Either delete the tools you don't want or implement guardrail to check for those tools on `assistant_message` events, DefaultGuardrails blocks create_tool and delete_file.
+copy_built_in_tools("./tools")  # copies the standard tool modules (browse_files, read_file, web_search/web_search_playwright, fetch_page, load_skill, unload_skill, create_skill, get_utc_time). use copy_built_in_power_tools to get create_tool, delete_file, write_file, run_sh **these tools should be inspected and understood before allowing and agent to access them, recommend implementing a Guardrail if you use them**
 toolbox = PangolinToolbox(tools_folder="./tools")
 ```
 
 Pass `toolbox=toolbox` to the factory. The runtime calls `load()`.
 
-BasicToolbox ignores the folder and loads only browse_files, fetch_page, web_search, read_file, get_utc_time from the package. Use it when the model must not write files or create tools.
+BasicToolbox implements the basic toolset from the library directory and provides tools for web search, browsing and reading files. It can not create tools, create/load/unload skills, or edit files.
 
 A new tool file in the PangolinToolbox folder:
 
@@ -117,7 +117,7 @@ from pangolin.guardrails import DefaultGuardrail
 from uuid import UUID
 
 memory = SQLiteMemoryManager(sqlite_folder="./db", chat_id=UUID("..."))  # omit chat_id to start new
-guard = DefaultGuardrail(blocked_tools=["create_tool", "delete_file"])
+guard = DefaultGuardrail(blocked_tools=["create_tool", "delete_file", "write_file", "run_sh"])
 ```
 
 SQLite file is `ta_records.db` inside that folder. Resuming loads an in-memory window (`reload_token_limit`, default 8000), not the full history. `update_chat_summary` is yours to call if you want a name, or a session aware tool could call it. The runtime never calls it.

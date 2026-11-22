@@ -1,6 +1,6 @@
 #Copyright (c) 2026 Gene B. Denney. All Rights Reserved.
 
-import importlib, json, os, traceback, sys, logging
+import importlib, json, sys, logging
 from pathlib import Path
 from typing import Iterator
 from ..core.interfaces.toolbox import Toolbox
@@ -9,7 +9,7 @@ from ..messages.tool_call_result import ToolCallResult
 
 LOGGER = logging.getLogger(__name__)
 
-DEFAULT_TOOLS_DIR = F'{os.path.dirname(__file__)}/tools'
+DEFAULT_TOOLS_DIR = Path(__file__).resolve().parent.joinpath('tools')
 DEFAULT_MAX_RESULTS_LENGTH = 50_000
 
 #hard coded list based on the built-in Pangolin tools
@@ -38,8 +38,8 @@ class BasicToolbox(Toolbox):
     def load(self):
         LOGGER.info('loading tools')
         for tool in self.tool_set:
-            file = f'{DEFAULT_TOOLS_DIR}/{tool}.py'
-            self._load_tool(Path(file))
+            file = DEFAULT_TOOLS_DIR.joinpath(f'{tool}.py')
+            self._load_tool(file)
 
         LOGGER.debug(f'tools loaded {len(self.registry)}')            
 

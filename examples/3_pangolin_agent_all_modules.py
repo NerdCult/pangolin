@@ -9,7 +9,7 @@ from uuid import UUID, uuid4
 
 #### ONLY NEEDS TO BE RUN ONCE, OR IF THE COPIES GET DELETED OR ALTERED. ####
 from pangolin.utils import copy_built_in_skills, copy_built_in_tools
-copy_built_in_tools() # copies the built-in tools to current working directory/tools/
+copy_built_in_tools() # copies the basic built-in tools to current working directory/tools/  use copy_built_in_power_tools for create_tool, write_file, delete_file, and run_sh, review and understand these tools before letting you agent use them
 copy_built_in_skills() # copies the built-in skills to current working directory/skills/   (built-in skills are primarily so the agent can help develop against this library)
 ####
 
@@ -36,15 +36,19 @@ session = openai_agent_runtime(
     key='your-key-here',
     # does the thing system prompts do (tells the agent how to act and behave)
     system_prompt=SYSTEM_PROMPT,
+
     # writes full history and keeps a configurable size of the conversation in-memory 
     memory_manager=SQLiteMemoryManager(chat_id=CHAT_ID),
+
     # provides a menu of available skills and guidance on how to load/unload/create them. must be paired with a toolbox that implmenets ToolboxAdvanced
     skill_manager=AdvancedSkillManager(),
+
     # the default ToolboxAdvanced implementation. can load session aware tools that can affect the runtime and other components.
     toolbox=PangolinToolbox(), # use BasicToolbox() to restrict your agent to web and file browsing or use DefaultGuardrail to block tool creation and file deletes or a custom list of blocked tools.
+
     # handles hook events for new user message, new agent message w/tool calls, and tool call results. can approve, modify, or deny (deny raises a PangolinError and ends the turn.)
-    #### STRONGLY RECOMMEND USING THIS IF YOU USE THE PANGOLIN TOOLBOX DEFAULTGUARDRAIL BLOCKS CREATE_TOOL AND DELETE_FILE WHICH ARE THE HIGH RISK BUILT-IN TOOLS ####
-    guardrail=DefaultGuardrail()
+    guardrail=DefaultGuardrail() # blocks a list of tools provided to the constructor. default blocks all 'power tools'
+    
     # max_tokens=32_000 # control the max size to send to the api on a given turn (approx)
     # max_rounds=10 # control how many times the agent loop can run per a single user input
     )

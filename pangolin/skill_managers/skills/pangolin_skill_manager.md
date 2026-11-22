@@ -61,7 +61,7 @@ Raise `KeyError` on an unknown name. The tool turns that into a string the model
 
 `load_skill` stores the body. `unload_skill` drops it. Neither should need a restart. `skills()` must reflect the change on the next turn, which it will, because the runtime calls it every turn.
 
-The built-in tools can be copied to a new directory using the code below. Default copies to the current working directory/skills/ or you can pass in a target directory. Built-in skills are primarily focused on Pangolin development and use.
+The built-in skills can be copied to a new directory using the code below. Default copies to the current working directory/skills/ or you can pass in a target directory. Built-in skills are primarily focused on Pangolin development and use.
 
 ```python
 from pangolin.utils import copy_built_in_skills

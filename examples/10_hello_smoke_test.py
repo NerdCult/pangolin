@@ -25,7 +25,7 @@ session = smoke_test_runtime(
                             system_prompt=SYSTEM_PROMPT,
                             # memory_manager=SQLiteMemoryManager(chat_id=CHAT_ID),
                             # skill_manager=AdvancedSkillManager(), 
-                            # toolbox=AdvancedToolbox()
+                            # toolbox=PangolinToolbox()
                             )
 
 cli(session)

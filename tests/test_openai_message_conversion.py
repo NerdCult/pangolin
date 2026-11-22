@@ -1,7 +1,7 @@
 #Copyright (c) 2026 Gene B. Denney. All Rights Reserved.
 
 import pytest, json
-from pangolin import OpenAIClient
+from pangolin.api_providers.open_ai_provider import OpenAIClient
 from pangolin.messages import ChatRecord, Part, ToolCall
 from openai import OpenAI
 
@@ -22,7 +22,7 @@ def test_openai_message(mock_openai_client):
 
     message = ChatRecord(role='user', content=[part])
 
-    openai_message = mock_openai_client._message_to_openai(message)
+    openai_message = mock_openai_client._record_to_openai(message)
 
     assert 'role' in openai_message.keys()
     assert openai_message['role'] == 'user'
@@ -51,7 +51,7 @@ def test_openai_messages(mock_openai_client):
                          tool_call_id='test id'), 
                 ]
 
-    openai_messages = mock_openai_client._messages_to_openai(messages)
+    openai_messages = mock_openai_client._records_to_openai(messages)
 
     assert len(openai_messages) == 4
 

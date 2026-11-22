@@ -2,7 +2,7 @@
 
 import pytest
 from anthropic import Anthropic
-from pangolin import AnthropicClient
+from pangolin.api_providers.anthropic_provider import AnthropicClient
 from pangolin.messages import ChatRecord, Part, ToolCall
 
 @pytest.fixture
@@ -22,7 +22,7 @@ def test_anthropic_message(mock_anthropic_client):
 
     message = ChatRecord(role='user', content=[part])
 
-    anth_message = mock_anthropic_client._message_to_anthropic(message)
+    anth_message = mock_anthropic_client._record_to_anthropic(message)
 
     assert 'role' in anth_message.keys()
     assert anth_message['role'] == 'user'
@@ -52,7 +52,7 @@ def test_anthropic_messages(mock_anthropic_client):
                          tool_call_id='test id'), 
                 ]
 
-    system, anth_messages = mock_anthropic_client._messages_to_anthropic(messages)
+    system, anth_messages = mock_anthropic_client._records_to_anthropic(messages)
 
     assert isinstance(system, str)
     assert system == 'you are an expert on pangolins'
