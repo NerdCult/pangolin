@@ -41,7 +41,7 @@ session = openai_agent_runtime(
     # provides a menu of available skills and guidance on how to load/unload/create them. must be paired with a toolbox that implmenets ToolboxAdvanced
     skill_manager=AdvancedSkillManager(),
     # the default ToolboxAdvanced implementation. can load session aware tools that can affect the runtime and other components.
-    toolbox=PangolinToolbox(),
+    toolbox=PangolinToolbox(), # use BasicToolbox() to restrict your agent to web and file browsing or use DefaultGuardrail to block tool creation and file deletes or a custom list of blocked tools.
     # handles hook events for new user message, new agent message w/tool calls, and tool call results. can approve, modify, or deny (deny raises a PangolinError and ends the turn.)
     #### STRONGLY RECOMMEND USING THIS IF YOU USE THE PANGOLIN TOOLBOX DEFAULTGUARDRAIL BLOCKS CREATE_TOOL AND DELETE_FILE WHICH ARE THE HIGH RISK BUILT-IN TOOLS ####
     guardrail=DefaultGuardrail()
