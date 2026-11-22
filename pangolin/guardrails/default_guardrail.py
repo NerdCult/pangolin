@@ -8,7 +8,7 @@ LOGGER = logging.getLogger(__name__)
 
 class DefaultGuardrail(Guardrail):
     def __init__(self, blocked_tools: list[str] | None = None):
-        self.blocked_tools = blocked_tools or ['create_tool', 'delete_file']
+        self.blocked_tools = blocked_tools or ['create_tool', 'delete_file', 'run_sh']
 
     def handle_guardrail_event(self, event: GuardrailEvent) -> GuardrailEventResponse:
         LOGGER.debug(f'guardrail recieved event: {event.to_json()}')

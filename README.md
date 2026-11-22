@@ -54,15 +54,16 @@ When you see the `USER>` prompt, type your message and hit Enter. the cli from e
 
 ## Tools and Skills
 
-`the 'x'_agent_runtime methods` can accept a system prompt, Memory Manager, Skill Manager, toolbox, guardrail, max user context token size, and max agent loop rounds per user input. Memory Manager defaults to `SimpleMemoryManger`, Skill Manager, toolbox, and guardrail default to None. max_tokens defaults to 32,000 and max_rounds defaults to 10. 
+`the 'x'_agent_runtime methods` can accept a system prompt, Memory Manager, Skill Manager, toolbox, guardrail, max_tokens, and max_rounds. Memory Manager defaults to `SimpleMemoryManger`, Skill Manager, toolbox, and guardrail default to None. max_tokens defaults to 32,000 and max_rounds defaults to 10. 
 - `SimpleMemoryManger` (in-memory with no persistence between sessions).
 - `SqliteMemoryManger` uses UUIDs to create and track sessions. Passing in a UUID will load the previous session if it exists. 
 - `SimpleSkillManager` loads all skill file in the skill directory (default ./skills).
 - `AdvancedSkillManager` provides a skills menu and instructions to load, unload, and create skills (requires PangolinToolbox)
-- `BasicToolbox` hardcoded to only load tools to get current time, browse/read files, and search the web.  **Recommended to use BasicToolbox first as it does not provide any high risk tools**
-- `PangolinToolbox` adds file writing, deletion, tool creation, and skill creation. 
-**USE DefaultGuardrail WITH PangolinToolbox UNTIL YOU ARE READY TO SET YOUR OWN GUARDRAILS. PangolinToolbox CAN CREATE IT'S OWN TOOLS AND ACCESS 'SESSION AWARE TOOLS' THAT HAVE ACCESS TO THE AGENT RUNTIME.**
-- `DefaultGuardrails` a minimal implementation of the guardrail Protocol. I blocks create_tool and delete_file tool calls, or you can pass your own list[str] of blocked tools. **strongly recommend using this till you are comfortable with your agent.**
+- `BasicToolbox` hardcoded to only load tools to get current time, browse/read files, and search the web. Reads from the library tools folder and does not support a custom folders directory. 
+- `PangolinToolbox` reads the tools files from a specified folder (default='./tools'). supports `session aware tools` that can access the agent runtime to support tool/skill creation, skill loading and unloading, updating name/description of a chat session, etc. use the copy_built_in_tools helper (example below) to get the core tool set. use copy_built_in_power_tools to get the tools that are more capable create_tool, delete_file/write_file, run_sh, etc. **review and understand power tools before deciding to allow your agent to run them**
+- `DefaultGuardrails` a minimal implementation of the guardrail Protocol. By default, it blocks run_sh, create_tool, and delete_file tool calls, or you can pass your own list[str] of blocked tools. **If you pull the power tools, I recommend using this or your own Guardrail implementation till you are comfortable with your agent.**
+- `max_tokens` limit the size of the current full context before sending to the API.
+- `max_rounds` limit the number of rounds the agent loop can make per single user input.
 
 ## Built-in resources
 
