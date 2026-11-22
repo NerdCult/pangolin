@@ -83,7 +83,7 @@ class RAGSkillManager(SkillManager, RAGComponent, RAGComponentAsync):
         return self._model
 
     @property
-    def collection(self):
+    def collection(self, model_name = _MODEL_NAME, model_dim = _MODEL_DIM):
         if self._col is None:
             self.db_path.mkdir(parents=True, exist_ok=True)
             self._client = chromadb.PersistentClient(path=str(self.db_path))
@@ -96,17 +96,17 @@ class RAGSkillManager(SkillManager, RAGComponent, RAGComponentAsync):
                     _COLLECTION,
                     metadata={
                         "hnsw:space": "cosine",
-                        "embed_model": _MODEL_NAME,
-                        "embed_dim": _MODEL_DIM,
+                        "embed_model": model_name,
+                        "embed_dim": model_dim,
                     },
                 )
             else:
                 meta = col.metadata or {}
-                if meta.get("embed_model") != _MODEL_NAME or meta.get("embed_dim") != _MODEL_DIM:
+                if meta.get("embed_model") != model_name or meta.get("embed_dim") != model_dim:
                     raise PangolinValueError(
                         f'collection was indexed with {meta.get("embed_model")} '
-                        f'dim={meta.get("embed_dim")}; this process is {_MODEL_NAME} '
-                        f'dim={_MODEL_DIM}. delete {self.db_path} and reindex.'
+                        f'dim={meta.get("embed_dim")}; this process is {model_name} '
+                        f'dim={model_dim}. delete {self.db_path} and reindex.'
                     )
             self._col = col
         return self._col
@@ -151,7 +151,7 @@ class RAGSkillManager(SkillManager, RAGComponent, RAGComponentAsync):
         return "\n".join(texts)
 
     def reload_skills(self) -> int:
-        ''' Simple wipe and reload, only needs to be run once as long as the database storage persists and the source files have not changed'''
+        ''' Simple wipe and reload, only needs to be run once as long as the database storage persists and the source files have not changed. '''
         self.collection.delete(where={"source": {"$ne": ""}})
         if self.chunk_overlap >= self.chunk_size:
             raise PangolinValueError('chunk_overlap must be smaller than chunk_size')
@@ -197,4 +197,14 @@ class RAGSkillManager(SkillManager, RAGComponent, RAGComponentAsync):
         self.skills_this_turn = self._format(hits)
 
     async def retrieve_with_chat_history_async(self, chat_history):
-        self.retrieve_with_chat_history(chat_history)
+        query = self._query_text(chat_history)
+        if not query:
+            self.skills_this_turn = ""
+            return
+        vec = self._embed_query(query)
+        hits = self.collection.query(
+            query_embeddings=[vec],
+            n_results=self.n_results,
+            include=["documents", "metadatas", "distances"],
+        )
+        self.skills_this_turn = self._format(hits)
