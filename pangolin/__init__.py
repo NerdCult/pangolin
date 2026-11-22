@@ -5,7 +5,6 @@ from .agent_runtimes import PangolinRuntime
 from .toolboxes import BasicToolbox, PangolinToolbox
 from .skill_managers import AdvancedSkillManager, SimpleSkillManager, RAGSkillManager
 from .guardrails import DefaultGuardrail
-from .rag_routers import RAGRouter
 from.response_composers import PangolinComposer
 from .utils import copy_built_in_skills, copy_built_in_tools, copy_built_in_power_tools
 from .memory_managers import SQLiteMemoryManager, SimpleMemoryManager
@@ -15,7 +14,6 @@ __all__ = [
     'cli',
     'PangolinRuntime',
     'PangolinComposer',
-    'RAGRouter',
     'DefaultGuardrail',
     'BasicToolbox',
     'PangolinToolbox',
