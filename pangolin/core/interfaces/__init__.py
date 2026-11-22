@@ -3,7 +3,7 @@
 from .agent_runtime import AgentRuntime, AgentRuntimeToQueue, AgentRuntimeAsync
 from .response_composer import ResponseComposer, ResponseComposerAsync
 from .client import Client, ClientAsync
-from .memory_manager import MemoryManager
+from .memory_manager import MemoryManager, IdTrackedMemoryManager
 from .provider import Provider
 from .skill_manager import SkillManager, SkillManagerSkillMaker, SkillManagerDynamic
 from .toolbox import Toolbox, ToolboxAdvanced
@@ -21,6 +21,7 @@ __all__ = [
     'Guardrail',
     'GuardrailAsync',
     'MemoryManager',
+    'IdTrackedMemoryManager',
     'Provider',
     'SkillManager',
     'SkillManagerSkillMaker',

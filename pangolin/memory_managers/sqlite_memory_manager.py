@@ -35,8 +35,9 @@ class SQLiteMemoryManager(IdTrackedMemoryManager):
         self.db_path = f'{sqlite_folder}/ta_records.db'
         try:
             self._verify_tables() # verify the required tables exist
-            if self._get_chat_summary(): # check for an existing chat history for the provided chat_id
-                LOGGER.info(f'previous session found for {self.chat_id}')
+            chat_summary = self._get_chat_summary()
+            if chat_summary: # check for an existing chat history for the provided chat_id
+                LOGGER.info(f'previous session found for {self.chat_id} last used: {chat_summary.last_used} name:{chat_summary.name} description: {chat_summary.description}')
                 self._reload()
                 if len(self.memory) > 0 and self.memory[0].role != 'user':      # APIs like the first chat  record to be a user message so trim the reloaded context
                     self.trim_context() 
