@@ -6,9 +6,6 @@ from ..core.interfaces import SkillManager
 
 LOGGER = logging.getLogger(__name__)
 
-SKILL_SUFFIXES = ('.md', '.json')
-
-
 class SimpleSkillManager(SkillManager):
     '''
     Implements all the Skill Manger options. 
@@ -29,9 +26,11 @@ class SimpleSkillManager(SkillManager):
     def reload_skills(self):
         self.skills_all = ''
         
-        for path in sorted(self.skills_folder.iterdir(), key=lambda p: (p.stem, p.suffix == '.md')):
-            with open(path, 'r') as f:
-                self.skills_all = f'{self.skills_all} \n\n{path.stem}:\n{f.read()}'
+        for path in sorted(self.skills_folder.iterdir()):
+            if path.is_file() and path.suffix == '.md':
+                with open(path, 'r') as f:
+                    LOGGER.debug(f'loading skill: {path.stem}')
+                    self.skills_all = f'{self.skills_all} \n\n{path.stem}:\n{f.read()}'
 
         LOGGER.info('skills loaded')
 

@@ -58,7 +58,7 @@ class AdvancedSkillManager(SkillManagerSkillMaker):
         self.menu = ''
         
         for path in self.skills_folder.iterdir():
-            if path.suffix == '.md':
+            if path.is_file and path.suffix == '.md':
                 self.available[path.stem] = path
         for name, path in self.available.items():
             lines.append(f'{name} = {parse_skill(path)[0]}')
@@ -68,6 +68,7 @@ class AdvancedSkillManager(SkillManagerSkillMaker):
             self.load_skill(name)
 
         LOGGER.info('skills loaded')
+        LOGGER.debug(f'skill registry: {self.available}')
 
     # provide the skill menu preamble + menu + loaded skills
     def skills(self) -> str:
