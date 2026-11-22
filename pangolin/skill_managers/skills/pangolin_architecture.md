@@ -46,7 +46,7 @@ All live in `pangolin.core.interfaces`. `@runtime_checkable`. The runtime checks
 | Protocol | Methods the runtime calls | Notes |
 |---|---|---|
 | MemoryManager | `get_context`, `add_context`, `trim_context` | Required shape. |
-| IdTrackedMemoryManger | `update_chat_summary(name, description)` | Runtime never calls it. Intended to be called by a `session aware tool` or the application code |
+| IdTrackedMemoryManger | `update_chat_summary(name, description)` | Runtime never calls it. Can be called from the session aware tool `update_chat_summary` or the application code |
 | SkillManager | `skills() -> str`, `reload_skills()` | Runtime calls `skills` only. |
 | SkillManagerDynamic | `load_skill`, `unload_skill` | Tools call these, not the runtime. |
 | SkillManagerSkillMaker | `create_skill(skill_name, description, text)` | Same. |

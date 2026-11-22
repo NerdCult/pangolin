@@ -67,7 +67,7 @@ When you see the `USER>` prompt, type your message and hit Enter. The cli from e
 
 ## Built-in resources
 
-- The built-in tools provide web and file search capabilities, load/unload/create skills capabilites (when paired with supporting Skill Manager and Toolbox). **built in tools have depenencies that are not required when installing the Pangolin library. Optionally use copy_built_in_power_tools to get tools that can create new tools, run sh, write/delete files. Power tools should be used with caution and/or a Guardrail implementation.**
+- The built-in tools provide web and file search capabilities, and update chat name and description, load/unload/create skills capabilites (when paired with supporting Skill Manager and Toolbox). **built in tools have depenencies that are not required when installing the Pangolin library. Optionally use copy_built_in_power_tools to get tools that can create new tools, run sh, write/delete files. Power tools should be used with caution and/or a Guardrail implementation.**
 - The built-in skills are focused on how to use or develop with this library.
 - To copy the built-in tools and skills run this script (moves them into the current working directory in tools and skills folders or you can set your own target dir, set the same directory when initializing your AdvancedSkillManager and PangolinToolbox):
 
