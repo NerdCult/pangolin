@@ -58,7 +58,7 @@ class AdvancedSkillManager(SkillManagerSkillMaker):
         self.menu = ''
         
         for path in self.skills_folder.iterdir():
-            if path.suffix in SKILL_SUFFIXES:
+            if path.suffix == '.md':
                 self.available[path.stem] = path
         for name, path in self.available.items():
             lines.append(f'{name} = {parse_skill(path)[0]}')
