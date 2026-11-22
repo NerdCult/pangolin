@@ -66,9 +66,9 @@ When you see the `USER>` prompt, type your message and hit Enter. the cli from e
 
 ## Built-in resources
 
-The built-in tools provide web and file search capabilities, load/unload/create skills capabilites (when paired with AdvancedSkillManager), and the ability to delete files and create tools (tool creation requires a ToolboxAdvanced instance) 
-The built-in skills are focused on how to use or develop with this library
-To copy the built-in tools and skills run this script (moves them into the current working directory in tools and skills folders or you can set your own target dir, set the same directory when initializing your SkillManager and Toolbox):
+- The built-in tools provide web and file search capabilities, load/unload/create skills capabilites (when paired with AdvancedSkillManager), and the ability to delete files and create tools (tool creation requires a ToolboxAdvanced instance) 
+- The built-in skills are focused on how to use or develop with this library
+- To copy the built-in tools and skills run this script (moves them into the current working directory in tools and skills folders or you can set your own target dir, set the same directory when initializing your SkillManager and Toolbox):
 
 ```
 from pangolin import copy_built_in_tools, copy_built_in_skills
