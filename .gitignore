@@ -1,5 +1,4 @@
 **/__pycache__/**
 venv/*
-skill_managers/skills/*
-!skill_managers/skills/potato.md
-!skill_managers/skills/__init__.py
+.venv/*
+dist/*
