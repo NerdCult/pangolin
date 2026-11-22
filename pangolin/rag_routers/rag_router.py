@@ -39,12 +39,14 @@ class RAGRouter(RAGComponent, RAGComponentAsync, Protocol):
             )
             return
 
-        if isinstance(self.skill_manager, RAGComponentAsync):
-            await self.skill_manager.retrieve_with_chat_history_async(chat_history)
-        else:
-            await asyncio.to_thread(self.skill_manager.retrieve_with_chat_history, chat_history)
-        
-        if isinstance(self.toolbox, RAGComponentAsync):
-            await self.toolbox.retrieve_with_chat_history_async(chat_history)
-        else:
-            await asyncio.to_thread(self.toolbox.retrieve_with_chat_history, chat_history)
+        if self.skill_manager:
+            if isinstance(self.skill_manager, RAGComponentAsync):
+                await self.skill_manager.retrieve_with_chat_history_async(chat_history)
+            else:
+                await asyncio.to_thread(self.skill_manager.retrieve_with_chat_history, chat_history)
+
+        if self.toolbox:
+            if isinstance(self.toolbox, RAGComponentAsync):
+                await self.toolbox.retrieve_with_chat_history_async(chat_history)
+            else:
+                await asyncio.to_thread(self.toolbox.retrieve_with_chat_history, chat_history)
