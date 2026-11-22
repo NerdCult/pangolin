@@ -1,6 +1,6 @@
 #Copyright (c) 2026 Gene B. Denney. All Rights Reserved.
 
-import importlib, json, os, sys, logging
+import importlib, json, sys, logging
 from pathlib import Path
 from typing import Iterator
 from ..messages import ToolCallResult
@@ -17,16 +17,16 @@ class PangolinToolbox(ToolboxAdvanced):
     The default tools_dir is the current working directory + /tools when the toolbox initiallizes.
     pangolin.copy_built_in_tools() will copy the built in tools to the current working directory + /tools.
     '''
-    def __init__(self, tools_folder: str = f'{os.getcwd()}/tools', max_results_length: int = DEFAULT_MAX_RESULTS_LENGTH):
+    def __init__(self, tools_folder: str| Path = Path.cwd().joinpath('tools'), max_results_length: int = DEFAULT_MAX_RESULTS_LENGTH):
         '''
         tools_folder: the folder where tool files are kepy
         max_results_length: caps the max result length to help control context size
         '''
         LOGGER.info(f'__init__ {tools_folder} {max_results_length}')
-        self.tools_folder: str = tools_folder
+        self.tools_folder: Path = tools_folder if isinstance(tools_folder, Path) else Path(tools_folder)
         self.max_results_length = max_results_length
         self.registry: dict = {}
-        Path(tools_folder).mkdir(parents=True, exist_ok=True)
+        self.tools_folder.mkdir(parents=True, exist_ok=True)
 
     # Toolbox advanced is designed to support session aware tools that allow the agent to interact with its own AgentRuntime. This must be set before loading tools as session aware tools can not be loaded
     def set_session(self, session: AgentRuntime):
@@ -36,19 +36,18 @@ class PangolinToolbox(ToolboxAdvanced):
     # iterate over the available tool filess and call _load_tool()
     def load(self):
         LOGGER.info('loading tools')
-        for file in Path(self.tools_folder).glob('*.py'):
-            if file.stem.startswith('__'):
-                continue
-            self._load_tool(file)     
+        for file in self.tools_folder.iterdir():
+            if file.is_file() and file.suffix == '.py' and not file.stem.startswith('__'):
+                self._load_tool(file)     
 
-        LOGGER.debug(f'tools loaded {len(self.registry)}')       
+        LOGGER.debug(f'{len(self.registry)} tools loaded ')       
 
     # read in the tool's Python file and loads the tool to self.registry
     def _load_tool(self, file: Path):
         LOGGER.debug(f'loading tool {file}')
         spec = importlib.util.spec_from_file_location(file.stem, file)
         if spec is None or spec.loader is None:
-            raise PangolinImportError(f'AdvancedToolbox failed to read tool spec {file}')
+            raise PangolinImportError(f'PangolinToolbox failed to read tool spec {file}')
         try:
             mod = importlib.util.module_from_spec(spec)
             sys.modules[file.stem] = mod
@@ -63,7 +62,7 @@ class PangolinToolbox(ToolboxAdvanced):
             self.registry[schema["name"]] = (schema, fn)
         except Exception as e:
             LOGGER.error(f'failed to load tool {file} {e}')
-            raise PangolinImportError(f'AdvancedToolbox failed to load tool {file} {e}')
+            raise PangolinImportError(f'PangolinToolbox failed to load tool {file} {e}')
 
     # returns the OpenAI spec tool schemas
     def schemas(self):
@@ -74,10 +73,9 @@ class PangolinToolbox(ToolboxAdvanced):
         LOGGER.info(f'creating tool {tool_name}')
         LOGGER.debug(code)
         try:
-            tool_file_path = f'{self.tools_folder}/{tool_name}.py'
-            with open(tool_file_path, 'w') as tool_file:
-                tool_file.write(code)
-            self._load_tool(Path(tool_file_path))
+            tool_file_path = self.tools_folder.joinpath(f'{tool_name}.py')
+            tool_file_path.write_text(code)
+            self._load_tool(tool_file_path)
             return f'tool, {tool_name}, created '
         except Exception as e:
             text = f'tool, {tool_name}, could not be created {e}'

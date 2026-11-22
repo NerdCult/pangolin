@@ -6,7 +6,7 @@ from .toolboxes import BasicToolbox, PangolinToolbox
 from .skill_managers import AdvancedSkillManager, SimpleSkillManager
 from .guardrails import DefaultGuardrail
 from.response_composers import PangolinComposer
-from .utils import copy_built_in_skills, copy_built_in_tools
+from .utils import copy_built_in_skills, copy_built_in_tools, copy_built_in_power_tools
 from .memory_managers import SQLiteMemoryManager, SimpleMemoryManager
 
 
@@ -18,6 +18,7 @@ __all__ = [
     'BasicToolbox',
     'PangolinToolbox',
     'copy_built_in_tools',
+    'copy_built_in_power_tools',
     'copy_built_in_skills',
     'AdvancedSkillManager', 
     'SimpleSkillManager',

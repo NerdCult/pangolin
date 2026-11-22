@@ -73,7 +73,7 @@ No module-level `run` is required when `make_session_aware_run` exists. Pangolin
 
 `set_session` must have run first. Calling `make_session_aware_run` without a session is a bug in `load` order, not in the tool.
 
-The built-in tools can be copied to a new directory using the code below. Default copies to the current working directory/tools/ or you can pass in a target directory.
+The built-in tools can be copied to a new directory using the code below. Default copies to the current working directory/tools/ or you can pass in a target directory. You can also use `copy_built_in_power_tools` to get the files for `create_tool`,`delete_file`, `write_file`, and `run_sh`, which should be reviewed and understood before giving access to an agent, it is recommended to use an implementation of Guardrail along with these tools.
 **Review tools before using.**
 
 ```python

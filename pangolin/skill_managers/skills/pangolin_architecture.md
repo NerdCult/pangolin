@@ -82,8 +82,8 @@ All live in `pangolin.core.interfaces`. `@runtime_checkable`. The runtime checks
 | SimpleSkillManager | Concatenate every file in the skills folder into the prompt. |
 | AdvancedSkillManager | Menu of names plus descriptions. Load, unload, and create on demand. Needs ToolboxAdvanced tools. |
 | BasicToolbox | Fixed safe built-in set: browse_files, fetch_page, web_search, read_file, get_utc_time. Ignores session-aware tools. |
-| PangolinToolbox | Load `*.py` from a tools folder. Can host session-aware tools and `create_tool`. `create_tool` is potentially dangerous without some Guardrail Implementation, DefaultGuardrail blocks `create_tool` and `delete_file` |
-| DefaultGuardrail | Blocks named tools (default `create_tool`, `delete_file`) by rejecting their call ids. Approves user input and tool results. |
+| PangolinToolbox | Load `*.py` from a tools folder. Can host session-aware tools like `create_tool`.|
+| DefaultGuardrail | Blocks a list of provided tools,  (default `create_tool`, `delete_file`, `write_file`, `run_sh`) by rejecting their call ids. Pass through approves user input and tool results. |
 | OpenAIProvider / AnthropicProvider / GeminiProvider | One API family. `make_client` returns a Client. |
 | SmokeTestClient | Scripted `ApiEvent`s. No network. For tests. Can be initialized with a custom set of ApiEvents to return in sequence, returns `script exhausted` each round once the scripted events are done. |
 | cli | Prints a session. `thinking`, `replying`, `tool_calls`, `error`. Ctrl+C cancels the turn. The Github repo's example folder has more a visually robust cli and async examples|

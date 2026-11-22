@@ -43,7 +43,7 @@ session = openai_agent_runtime(
 cli(session)
 ```
 
-1. Save this as `hello_pangolin.py` (also available in the examples folder)
+1. Save this as `hello_pangolin.py` (also available in the examples folder as 1_hello_pangolin_agent.py)
 2. Update the URL, MODEL, and KEY
 3. (Optional) Swap `openai_agent_runtime` for `anthropic_agent_runtime` if preferred or use the `1_hello_pangolin_gemini.py` from the examples folder.
 4. Run it: `python hello_pangolin.py`
@@ -54,14 +54,14 @@ When you see the `USER>` prompt, type your message and hit Enter. The cli from e
 
 ## Runtime Options: Memory, Tools, Skills
 
-`the 'x'_agent_runtime methods` can accept a system_prompt, memory_manager, skill_manager, toolbox, guardrail, max_tokens, and max_rounds. memory_manager defaults to `SimpleMemoryManger`, skill_manager, toolbox, and guardrail default to None. max_tokens defaults to 32,000 and max_rounds defaults to 10. 
-- `SimpleMemoryManger` (in-memory with no persistence between sessions).
-- `SqliteMemoryManger` uses UUIDs to create and track sessions. Passing in a UUID will load the previous session if it exists. 
+`the 'x'_agent_runtime methods` can accept a system_prompt, memory_manager, skill_manager, toolbox, guardrail, max_tokens, and max_rounds. memory_manager defaults to `SimpleMemoryManager`, skill_manager, toolbox, and guardrail default to None. max_tokens defaults to 32,000 and max_rounds defaults to 10. 
+- `SimpleMemoryManager` (in-memory with no persistence between sessions).
+- `SqliteMemoryManager` uses UUIDs to create and track sessions. Passing in a UUID will load the previous session if it exists. 
 - `SimpleSkillManager` loads all skill file in the skill directory (default ./skills). Use the copy_built_in_skills helper shown below to copy the built in skills.
 - `AdvancedSkillManager` provides a skills menu and instructions to load, unload, and create skills (requires PangolinToolbox)
 - `BasicToolbox` hardcoded to only load tools to get current time, browse/read files, and search the web. Reads from the library tools folder and does not support a custom folders directory. 
 - `PangolinToolbox` reads the tools files from a specified folder (default='./tools'). supports `session aware tools` that can access the agent runtime to support tool/skill creation, skill loading and unloading, updating name/description of a chat session, etc. use the copy_built_in_tools helper (example below) to get the core tool set. use copy_built_in_power_tools to get the tools that are more capable create_tool, delete_file/write_file, run_sh, etc. **review and understand power tools before deciding to allow your agent to run them**
-- `DefaultGuardrails` a minimal implementation of the guardrail Protocol. By default, it blocks run_sh, create_tool, and delete_file tool calls, or you can pass your own list[str] of blocked tools. **If you pull the power tools, I recommend using this or your own Guardrail implementation till you are comfortable with your agent.**
+- `DefaultGuardrail` a minimal implementation of the guardrail Protocol. By default, it blocks run_sh, create_tool, write_file, and delete_file tool calls, or you can pass your own list[str] of blocked tools. **If you pull the power tools, I recommend using this or your own Guardrail implementation till you are comfortable with your agent.**
 - `max_tokens` limit the size of the current full context before sending to the API.
 - `max_rounds` limit the number of rounds the agent loop can make per single user input.
 

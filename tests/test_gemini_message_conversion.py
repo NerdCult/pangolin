@@ -1,7 +1,7 @@
 #Copyright (c) 2026 Gene B. Denney. All Rights Reserved.
 
 import pytest
-from pangolin import GeminiClient
+from pangolin.api_providers.gemini_provider import GeminiClient
 from pangolin.messages import ChatRecord, Part, ToolCall
 from google import genai
 
@@ -13,7 +13,7 @@ def test_gemini_message(mock_gemini_client):
     part = Part(type='text', data={'text': 'pangolins are cool'})
     message = ChatRecord(role='user', content=[part])
 
-    gemini_parts = mock_gemini_client._message_to_gemini(message,[])
+    gemini_parts = mock_gemini_client._record_to_gemini(message,[])
 
     assert len(gemini_parts) == 1
     gem_part = gemini_parts[0]
@@ -33,7 +33,7 @@ def test_gemini_messages(mock_gemini_client):
                          tool_call_id='test id'), 
                 ]
 
-    system, gemini_messages = mock_gemini_client._messages_to_gemini(messages)
+    system, gemini_messages = mock_gemini_client._records_to_gemini(messages)
 
     assert isinstance(system, str)
     assert system == 'you are an expert on pangolins'

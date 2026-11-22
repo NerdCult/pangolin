@@ -49,7 +49,7 @@ Blocked tool calls still need a tool-role record or the next API call breaks. Th
 
 ## DefaultGuardrail behavior
 
-`DefaultGuardrail(blocked_tools=None)` blocks `create_tool` and `delete_file`. Approves `user_input` and `tool_call_result`. On `assistant_output`, if any tool name is blocked, returns `modify` with those ids. If none are blocked, `approve`. Any other event type is `deny`.
+`DefaultGuardrail(blocked_tools=None)` default blocks `create_tool`,`delete_file`, `write_file`, and `run_sh`. Approves `user_input` and `tool_call_result`. On `assistant_output`, if any tool name is blocked, returns `modify` with those ids. If none are blocked, `approve`. Any other event type is `deny`.
 
 Matching is exact on `ToolCall.name`, not on arguments. A blocked tool with a different name string will run.
 

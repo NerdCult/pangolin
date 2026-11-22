@@ -1,6 +1,6 @@
 #Copyright (c) 2026 Gene B. Denney. All Rights Reserved.
 
-import os, logging
+import logging
 from pathlib import Path
 from ..core.interfaces import SkillManagerSkillMaker
 
@@ -9,10 +9,8 @@ LOGGER = logging.getLogger(__name__)
 
 def skill_name_of(skill_name: str) -> str:
     """Normalize a skill name: drop any directory part and a known suffix."""
-    name = Path(skill_name).name
-    if name.endswith('.md'):
-        return name[:-3]
-    return name
+    name = Path(skill_name)
+    return name.stem if name.suffix == '.md' else name.name
 
 def parse_skill(path: Path) -> tuple[str, str]:
     """Return (description, text) for a .md (front matter)"""
@@ -34,7 +32,7 @@ class AdvancedSkillManager(SkillManagerSkillMaker):
     skills() returns a menu of available skill names and descriptions and how to use tools to load and unload skills as well as create new skills.
 
     '''
-    def __init__(self, skill_folder: str = f'{os.getcwd()}/skills', menu_preamble: str | None = None):
+    def __init__(self, skill_folder: str | Path= Path.cwd().joinpath('skills'), menu_preamble: str | None = None):
         '''
         skill_folder: the folder path where skill markdown files can be found.
         menu_preamble: if None, one is set internally to a default explaination of the skills menau provided and how to load, unload, and create skills (requires ToolboxAdvanced implementation).
@@ -43,12 +41,12 @@ class AdvancedSkillManager(SkillManagerSkillMaker):
         loaded skills are tracked in another set set and the full skill is appended after available skills
         '''
         LOGGER.info(f'__init__ {skill_folder} {menu_preamble}')
-        self.skills_folder = Path(skill_folder)
+        self.skills_folder = skill_folder if isinstance(skill_folder, Path) else Path(skill_folder)
         self.menu_preamble: str = menu_preamble or 'Provided below are the available skills in this environment. To have one loaded into the context use the load_skill tool providing the name of the skill to load. Use unload_skill if a skill is no longer needed also passing the name of the skill. Use create_skill to create a new skill; these can track user preferences, notes about a long running project of the user, or guides for performing tasks that may need to be repeated. '
         self.available: dict[str, Path] = {}  # name -> file
         self.menu: str = ''
         self.loaded_skills: dict[str, str] = {}
-        Path(skill_folder).mkdir(parents=True, exist_ok=True)
+        self.skills_folder.mkdir(parents=True, exist_ok=True)
         self.reload_skills()
 
     # clear current skill meny and available skills,, read and parse the skills markdown files
@@ -58,7 +56,7 @@ class AdvancedSkillManager(SkillManagerSkillMaker):
         self.menu = ''
         
         for path in self.skills_folder.iterdir():
-            if path.is_file and path.suffix == '.md':
+            if path.is_file() and path.suffix == '.md':
                 self.available[path.stem] = path
         for name, path in self.available.items():
             lines.append(f'{name} = {parse_skill(path)[0]}')
@@ -104,7 +102,7 @@ class AdvancedSkillManager(SkillManagerSkillMaker):
             raise ValueError('skill_name must not be empty')
         # the description lives on one front matter line
         description = ' '.join(description.split())
-        (self.skills_folder / f'{name}.md').write_text(
+        self.skills_folder.joinpath(f'{name}.md').write_text(
             f'---\ndescription: {description}\n---\n{text}\n', encoding='utf-8')
         LOGGER.debug(f'skill created {skill_name}')
         self.reload_skills()
