@@ -59,7 +59,7 @@ When you see the `USER>` prompt, type your message and hit Enter. the cli from e
 - `SqliteMemoryManger` uses UUIDs to create and track sessions. Passing in a UUID will load the previous session if it exists. 
 - `SimpleSkillManager` loads all skill file in the skill directory (default ./skills).
 - `AdvancedSkillManager` provides a skills menu and instructions to load, unload, and create skills (requires PangolinToolbox)
-- `BasicToolbox` hardcoded to only load tools to get current time, browse/read files, search the web, and load/unload skills.  
+- `BasicToolbox` hardcoded to only load tools to get current time, browse/read files, and search the web.  
 - `PangolinToolbox` adds file writing, deletion, tool creation, and skill creation. 
 **USE DefaultGuardrail WITH PangolinToolbox UNTIL YOU ARE READY TO SET YOUR OWN GUARDRAILS. PangolinToolbox CAN CREATE IT'S OWN TOOLS AND ACCESS 'SESSION AWARE TOOLS' THAT HAVE ACCESS TO THE AGENT RUNTIME.**
 - `DefaultGuardrails` a minimal implementation of the guardrail Protocol. I blocks create_tool and delete_file tool calls, or you can pass your own list[str] of blocked tools. **strongly recommend using this till you are comfortable with your agent.**
