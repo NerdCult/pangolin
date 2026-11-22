@@ -48,7 +48,7 @@ When you see the `USER>` prompt, type your message and hit Enter. the cli from e
 
 ## Tools and Skills
 
-`the 'x'_agent_runtime methods` can accept a system prompt, Memory Manager, Skill Manager, and a Toolbox. Memory Manager defaults to `SimpleMemoryManger`, Skill Manger, and Toolbox default to None. 
+`the 'x'_agent_runtime methods` can accept a system prompt, Memory Manager, Skill Manager, toolbox, guardrail, max user context token size, and max agent loop rounds per user input. Memory Manager defaults to `SimpleMemoryManger`, Skill Manager, toolbox, and guardrail default to None. max_tokens defaults to 32,000 and max_rounds defaults to 10. 
 - `SimpleMemoryManger` (in-memory with no persistence between sessions).
 - `SqliteMemoryManger` uses UUIDs to create and track sessions. Passing in a UUID will load the previous session if it exists. 
 - `SimpleSkillManager` loads all skill file in the skill directory (default ./skills).
@@ -56,7 +56,7 @@ When you see the `USER>` prompt, type your message and hit Enter. the cli from e
 - `BasicToolbox` hardcoded to only load tools to get current time, browse/read files, search the web, and load/unload skills.  
 - `PangolinToolbox` adds file writing, deletion, tool creation, and skill creation. 
 **USE DefaultGuardrail WITH PangolinToolbox UNTIL YOU ARE READY TO SET YOUR OWN GUARDRAILS. PangolinToolbox CAN CREATE IT'S OWN TOOLS AND ACCESS 'SESSION AWARE TOOLS' THAT HAVE ACCESS TO THE AGENT RUNTIME.**
-- `DefaultGuardrails` a minimal implementation of the guardrail Protocol. I blocks create_tool and delete_file tool calls. **strongly recommend using this till you are comfortable with your agent.**
+- `DefaultGuardrails` a minimal implementation of the guardrail Protocol. I blocks create_tool and delete_file tool calls, or you can pass your own list[str] of blocked tools. **strongly recommend using this till you are comfortable with your agent.**
 
 ## Built-in resources
 
