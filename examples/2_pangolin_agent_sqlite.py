@@ -23,14 +23,15 @@ print (CHAT_ID)
 
 #Create a basic instance of AgentRuntime
 # use anthropic_agent_runtime if you want to connect to their api
-runtime = openai_agent_runtime(url=URL, 
-                               model=MODEL, 
-                               key=KEY,
-                               # does the thing system prompts do (tells the agent how to act and behave)
-                               system_prompt=SYSTEM_PROMPT,
-                                # writes full history and keeps a configurable size of the conversation in-memory 
-                               memory_manager=SQLiteMemoryManager(chat_id=CHAT_ID)
-                               )
+session = openai_agent_runtime(
+    url=URL, 
+    model=MODEL, 
+    key=KEY,
+    # does the thing system prompts do (tells the agent how to act and behave)
+    system_prompt=SYSTEM_PROMPT,
+    # writes full history and keeps a configurable size of the conversation in-memory 
+    memory_manager=SQLiteMemoryManager(chat_id=CHAT_ID)
+    )
 
 #Launch the command line interface to interact with the AgentRuntime runtime. output is color-coded green -> user, red -> agent thinking, yellow -> tool calls, blue -> agent reply
-cli(runtime)
+cli(session)

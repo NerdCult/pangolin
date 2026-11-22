@@ -12,35 +12,35 @@ Email me at gbdenney84@gmail.com to inquire about a license (or open a GitHub is
 For full legal terms, see the [LICENSE](LICENSE) file. Commercial use or uses outside the license always requires explicit written approval from the copyright holder (Gene B. Denney).
 
 ## Introduction
-Pangolin is a AI Agent library. Built to be functional out-of-the-box but completely extensible and customisable. Each component implements  Python Protocol class and each edge has an internal data class for normalization. The core object is the AgentRuntime. AgentRuntime manages recieving the user input, context building (chat history, system prompt, skills, and tools), the agent loop (api call, normalization, tool calls). 
+Pangolin is a AI Agent library developed with Python >= 3.14. Built to be functional out-of-the-box but completely extensible and customisable. Each component implements a Python Protocol and each edge has an internal data class for normalization. The core object is the PangolinRuntime. PangolinRuntime is an orchestrator and agent loop manager, moving from one step to the next as each component finishes is responsibility. The component based design with Protocol contracts and data normalization types, means any one component (skills, memory, tools, api) can be implemented by a developer without having to touch the rest of the life cycle.
 
 ## Quick Start: Hello Pangolin
 
 The sample below runs a simple command-line chat interface. 
-
+**Pangolin was intentionally kept dependency light, so you will need to install openai, anthropic, and/or google-genai as you plan to use them.**
 
 ```python
 from pangolin.api_providers.open_ai_provider import openai_agent_runtime
 from pangolin import cli
-
-URL = 'https://api.openai.com/v1'   # or your preferred endpoint
-MODEL = 'gpt-4o-mini'               # or whatever you prefer
-KEY = 'your-key-here'
+# from cli import cli # use the cli.py from the examples folder for color coded output and async examples. (requires colorama and pynput)
 
 #Create a basic instance of AgentRuntime
 # use anthropic_agent_runtime if you want to connect to their api
-session = openai_agent_runtime(url=URL, model=MODEL, key=KEY)
+session = openai_agent_runtime(
+    url='https://api.openai.com/v1',   
+    model='gpt-4o-mini',              
+    key='your-key-here')
 
-#Launch the command line interface to interact with the AgentRuntime runtime. output is color-coded green -> user, red -> agent thinking, yellow -> tool calls, blue -> agent reply
+#Launch the command line interface to interact with the AgentRuntime runtime. See the examples to add persistent memory, skills, tools, and guardrails
 cli(session)
 ```
 
 1. Save this as `hello_pangolin_agent.py` (also available in the examples folder)
 2. Update the URL, MODEL, and KEY
-3. (Optional) Swap `openai_agent_runtime` for `anthropic_agent_runtime` if preferred or use the 1_hello_pangolin_gemini.py from the examples folder.
+3. (Optional) Swap `openai_agent_runtime` for `anthropic_agent_runtime` if preferred or use the `1_hello_pangolin_gemini.py` from the examples folder.
 4. Run it: `python hello_pangolin.py`
 
-When you see the `>>>` prompt, type your message and hit Enter.
+When you see the `USER>` prompt, type your message and hit Enter. the cli from examples will show `>>>` in green.
 
 **Gemini offers a FREE tier API key** https://aistudio.google.com/docs/api-key if you want to test this library free of charge (and don't run local ya know).
 
@@ -53,11 +53,14 @@ When you see the `>>>` prompt, type your message and hit Enter.
 - `AdvancedSkillManager` provides a skills menu and instructions to load, unload, and create skills (requires PangolinToolbox)
 - `BasicToolbox` hardcoded to only load tools to get current time, browse/read files, search the web, and load/unload skills.  
 - `PangolinToolbox` adds file writing, deletion, tool creation, and skill creation. 
-**USE THE PANGOLIN TOOLBOX WITH CAUTION — THERE ARE NO HARD BUILT-IN GUARDRAILS.**
-- the create_tool and delete_file tools are the dangerous one, if you want to not include them. (delete_file only deletes within the current working directory, but with create_tool that guardrail is readily bypassed)
-- Guardrails can be implemented but are not on by default.
+**USE DefaultGuardrail WITH PangolinToolbox UNTIL YOU ARE READY TO SET YOUR OWN GUARDRAILS. PangolinToolbox CAN CREATE IT'S OWN TOOLS AND ACCESS 'SESSION AWARE TOOLS' THAT HAVE ACCESS TO THE AGENT RUNTIME.**
+- `DefaultGuardrails` a minimal implementation of the guardrail Protocol. I blocks create_tool and delete_file tool calls. **strongly recommend using this till you are comfortable with your agent.**
 
-To copy the built-in tools and skills run this script (moves them into the current working directory in tools and skills folders or you can set your own target dir, set the same directory when initializing SkillManger and Toolbox):
+## Built-in resources
+
+The built-in tools provide web and file search capabilities, load/unload/create skills capabilites (when paired with AdvancedSkillManager), and the ability to delete files and create tools (tool creation requires a ToolboxAdvanced instance) 
+The built-in skills are focused on how to use or develop with this library
+To copy the built-in tools and skills run this script (moves them into the current working directory in tools and skills folders or you can set your own target dir, set the same directory when initializing your SkillManager and Toolbox):
 
 ```
 from pangolin import copy_built_in_tools, copy_built_in_skills

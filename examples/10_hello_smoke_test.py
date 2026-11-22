@@ -1,11 +1,13 @@
 #Copyright (c) 2026 Gene B. Denney. All Rights Reserved.
 
+#### USE THE SMOKE TEST RUNTIME TO TEST FUNCTIONALITY ESPECIALLY WHEN DEVELOPING NEW NON-CLIENT COMPONENTS (SKILLS, MEMORY, TOOLS, GUARDRAILS)
 # smoke_test_runtime can take a set of scripted ApiEvents. This allows testing and development for other components without requiring the cost of connecting to an LLM API.
-from pangolin import PangolinToolbox, BasicToolbox, AdvancedSkillManager,  SQLiteMemoryManager
 from pangolin.api_providers.smoke_test_client import smoke_test_runtime
+from pangolin import SQLiteMemoryManager, AdvancedSkillManager, PangolinToolbox, DefaultGuardrail
+from pangolin.utils import copy_built_in_skills, copy_built_in_tools
 #from pangolin import cli # uses the built in low dependency cli
 from cli import cli # more the robust cli included in the examples folder (requires colorama and pynput, and contains cli_async and cli_queue as demos for hooking to the runtime output)
-from uuid import uuid4
+from uuid import UUID, uuid4
 import logging
 
 logging.basicConfig(
