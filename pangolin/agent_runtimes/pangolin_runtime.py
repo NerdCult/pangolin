@@ -2,7 +2,7 @@
 
 from typing import Protocol, Iterator, AsyncGenerator
 import logging, asyncio, threading
-from ..core.interfaces import AgentRuntime, AgentRuntimeAsync, AgentRuntimeToQueue, MemoryManager,SkillManager, Toolbox, ToolboxAdvanced, ResponseComposer, ResponseComposerAsync, Guardrail, GuardrailAsync
+from ..core.interfaces import AgentRuntime, AgentRuntimeAsync, AgentRuntimeToQueue, MemoryManager,SkillManager, Toolbox, ToolboxAdvanced, ResponseComposer, ResponseComposerAsync, Guardrail, GuardrailAsync, RAGComponentAsync, RAGComponent
 from ..core.exceptions import PangolinTypeError, PangolinValueError, PangolinGuardRailDenial
 from ..core.types import GuardrailEvent
 from ..messages import ChatRecord, Part, AgentMessage, ToolCall
@@ -25,6 +25,7 @@ class PangolinRuntime(AgentRuntime, AgentRuntimeToQueue, AgentRuntimeAsync, Prot
                  skill_manager: SkillManager | None = None, 
                  toolbox: Toolbox | None = None,
                  guardrail: Guardrail | GuardrailAsync | None = None,
+                 rag_connection: RAGComponent | RAGComponentAsync | None = None,
                  max_tokens: int = 32_000,
                  max_rounds: int = 10):
         '''
@@ -33,6 +34,7 @@ class PangolinRuntime(AgentRuntime, AgentRuntimeToQueue, AgentRuntimeAsync, Prot
         memory_manager:  maintains the chat history for the session. If None the SimpleMemoryManager will be used, which only  stores the current session history in memory with old messages trimmed to keep system prompt, skills, chat history, and tools list under max_token size
         skill_manager: provides skills to the session
         toolbox: provides the available tools and executes them
+        rag_component: can be the same as skill_manager or toolbox if RAGComponent | RAGComponentAsync is implemented on them or use the RAGRouter to connect the hook to both
         max_tokens: sets the ceiling for the max context sent to the model (system prompt, skills, chat history, and tools list)
         max_rounds: int = 10 sets the maxiumum rounds the agent can make for a single user message (one round can have multiple tool calls)
         '''
@@ -49,6 +51,8 @@ class PangolinRuntime(AgentRuntime, AgentRuntimeToQueue, AgentRuntimeAsync, Prot
             raise PangolinTypeError('toolbox parameter does not implement Toolbox')
         if guardrail and not isinstance(guardrail, (Guardrail, GuardrailAsync)):
             raise PangolinTypeError('guardrail parameter does not implement Guardrail or GuardrailAsync')
+        if rag_connection and not isinstance(rag_connection, (RAGComponent, RAGComponentAsync)):
+            raise PangolinTypeError('rag_component parameter does not implement RAGComponent or RAGComponentAsync')
         
         self.composer: ResponseComposer = composer
         self.system_prompt: str = system_prompt
@@ -65,6 +69,7 @@ class PangolinRuntime(AgentRuntime, AgentRuntimeToQueue, AgentRuntimeAsync, Prot
             self.toolbox.load()
             LOGGER.info('toolbox loaded')
         self.guardrail = guardrail
+        self.rag_connection = rag_connection
         self.max_tokens = max_tokens
         self.max_rounds = max_rounds
 
@@ -216,6 +221,15 @@ class PangolinRuntime(AgentRuntime, AgentRuntimeToQueue, AgentRuntimeAsync, Prot
                 raise PangolinValueError('runtime guardrail must implement the non async Guardrail to be used in    the synchorous handle_user_message() call')
             self._user_message_guardrail_check(record)
 
+            ''' Hook for Retrieval Augmented Generation components'''
+            if self.rag_connection:
+                history = self.memory_manager.get_context()
+                if isinstance(self.rag_connection, RAGComponent):
+                    LOGGER.debug(f'calling retrieve_with_chat_history on {len(history)} records')
+                    self.rag_connection.retrieve_with_chat_history(history)
+                else:
+                    raise PangolinValueError('rag_connection must implement RAGComponent to be used in the synchronous call')
+
             for _ in range(self.max_rounds):
                 if stop.is_set(): break
 
@@ -257,6 +271,13 @@ class PangolinRuntime(AgentRuntime, AgentRuntimeToQueue, AgentRuntimeAsync, Prot
                 await self._user_message_guardrail_check_async(record)
             else:
                 await asyncio.to_thread(self._user_message_guardrail_check, record)
+
+            if self.rag_connection:
+                history = self.memory_manager.get_context()
+                if isinstance(self.rag_connection, RAGComponentAsync):
+                    await self.rag_connection.retrieve_with_chat_history_async(history)
+                else:
+                    await asyncio.to_thread(self.rag_connection.retrieve_with_chat_history, history)
 
             for _ in range(self.max_rounds):
                 if stop.is_set(): break
@@ -310,6 +331,13 @@ class PangolinRuntime(AgentRuntime, AgentRuntimeToQueue, AgentRuntimeAsync, Prot
                 await self._user_message_guardrail_check_async(record)
             else:
                 await asyncio.to_thread(self._user_message_guardrail_check, record)
+
+            if self.rag_connection:
+                history = self.memory_manager.get_context()
+                if isinstance(self.rag_connection, RAGComponentAsync):
+                    await self.rag_connection.retrieve_with_chat_history_async(history)
+                else:
+                    await asyncio.to_thread(self.rag_connection.retrieve_with_chat_history, history)
 
             for _ in range(self.max_rounds):
                 if stop.is_set(): break

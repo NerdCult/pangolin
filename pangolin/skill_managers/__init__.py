@@ -2,8 +2,10 @@
 
 from .advanced_skill_manager import AdvancedSkillManager
 from .simple_skill_manager import SimpleSkillManager
+from .rag_skill_manager import RAGSkillManager
 
 __all__ = [
     'AdvancedSkillManager',
-    'SimpleSkillManager'
+    'SimpleSkillManager',
+    'RAGSkillManager'
 ]
