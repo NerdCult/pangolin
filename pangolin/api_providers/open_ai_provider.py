@@ -7,7 +7,7 @@ except:
     raise PangolinImportError('using openai_provider requires the openai library, pip install pangolin[openai]')
 import json, logging
 from typing import Iterator, Protocol
-from ..core.interfaces import Provider, Client, ClientAsync, MemoryManager, SkillManager, Toolbox, Guardrail, RAGComponent
+from ..core.interfaces import Provider, Client, MemoryManager, SkillManager, Toolbox, Guardrail, RAGComponent
 from ..core.exceptions import PangolinTypeError
 from ..response_composers import PangolinComposer
 from ..agent_runtimes import PangolinRuntime
@@ -16,7 +16,7 @@ from ..messages import ChatRecord, Part, ApiEvent, ToolCall
 
 LOGGER = logging.getLogger(__name__)
 
-class OpenAIClient(Client, ClientAsync, Protocol):
+class OpenAIClient(Client, Protocol):
     def __init__(self, connection: OpenAI, model_name: str, **api_kwargs):
         '''
         connection: openai.OpenAI instance
@@ -108,35 +108,7 @@ class OpenAIClient(Client, ClientAsync, Protocol):
             LOGGER.info(f'tool calls: {calls}')
             return ApiEvent(event_type="tool_call", tool_calls=list(calls.values()))
 
-    
-    def get_stream(self, records: list[ChatRecord], tools: list[dict] | None = None) -> Iterator[ApiEvent]:
-        '''
-        Calls chat.completeion.create(), yields the chunks as ApiEvents
-        '''
-        LOGGER.info(f'get_stream with {len(records)} records and {len(tools) if tools else '0'} tools')
-        stream = self.connection.chat.completions.create(
-            model=self.model_name, 
-            messages=self._records_to_openai(records),
-            tools=tools,
-            stream=True,
-            **self.api_kwargs)
-
-        calls = {}
-        raw_args = {}
-
-        for chunk in stream:
-            if not chunk.choices:
-                continue
-            api_event = self._process_chunk(chunk, calls, raw_args)
-            if api_event:
-                yield api_event
-                if api_event.event_type == 'done':
-                    break
-            
-        if calls:
-            yield self._process_tool(calls, raw_args)
-    
-    async def get_stream_async(self, records, tools = None):
+    async def get_stream(self, records, tools = None):
         '''
         Calls chat.completeion.create() on the async OpenAI client, yields the chunks as ApiEvents
         '''

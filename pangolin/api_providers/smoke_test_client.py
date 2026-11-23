@@ -2,7 +2,7 @@
 
 import logging, copy, asyncio
 from typing import Protocol
-from ..core.interfaces import  Client, ClientAsync, MemoryManager, SkillManager, Toolbox, Guardrail, RAGComponent
+from ..core.interfaces import  Client, MemoryManager, SkillManager, Toolbox, Guardrail, RAGComponent
 from ..response_composers import PangolinComposer
 from ..memory_managers import SimpleMemoryManager
 from ..agent_runtimes import PangolinRuntime
@@ -31,7 +31,7 @@ DEFAULT_SMOKE_TEST_EVENTS: list[ApiEvent] =[
     # end second round, will yield script exahustion after this
 ]
 
-class SmokeTestClient(Client, ClientAsync, Protocol):
+class SmokeTestClient(Client, Protocol):
     def __init__(self, responses: list[ApiEvent] = DEFAULT_SMOKE_TEST_EVENTS, show_system: bool = False, list_tools: bool = False):
         self.responses = copy.deepcopy(responses)
         self.show_system = show_system
