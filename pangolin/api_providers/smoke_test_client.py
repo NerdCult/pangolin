@@ -2,7 +2,7 @@
 
 import logging, copy, asyncio
 from typing import Protocol
-from ..core.interfaces import  Client, ClientAsync, MemoryManager, SkillManager, Toolbox, Guardrail, RAGComponent, RAGComponentAsync
+from ..core.interfaces import  Client, ClientAsync, MemoryManager, SkillManager, Toolbox, Guardrail, RAGComponent
 from ..response_composers import PangolinComposer
 from ..memory_managers import SimpleMemoryManager
 from ..agent_runtimes import PangolinRuntime
@@ -95,7 +95,7 @@ def smoke_test_runtime(
                          skill_manager: SkillManager | None = None,
                          toolbox: Toolbox | None = None,
                          guardrail: Guardrail | None = None,
-                         rag_connection: RAGComponent | RAGComponentAsync | None = None,
+                         rag_connection: RAGComponent | None = None,
                          max_tokens: int = 32_000,
                          max_rounds: int = 10,
                          responses: list[ApiEvent] | None = None,

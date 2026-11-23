@@ -8,7 +8,7 @@ except:
 from typing import Iterator, Protocol, AsyncGenerator
 import logging
 from ..messages import ChatRecord, Part, ApiEvent, ToolCall
-from ..core.interfaces import Client, Provider, ClientAsync, MemoryManager, Toolbox, SkillManager, Guardrail, RAGComponent, RAGComponentAsync
+from ..core.interfaces import Client, Provider, ClientAsync, MemoryManager, Toolbox, SkillManager, Guardrail, RAGComponent
 from ..memory_managers import SimpleMemoryManager
 from ..response_composers import PangolinComposer
 from ..agent_runtimes import PangolinRuntime
@@ -299,7 +299,7 @@ def anthropic_agent_runtime(url: str,
                          skill_manager: SkillManager | None = None,
                          toolbox: Toolbox | None = None,
                          guardrail: Guardrail | None = None, 
-                         rag_connection: RAGComponent | RAGComponentAsync | None = None,
+                         rag_connection: RAGComponent | None = None,
                          max_tokens: int = 32_000,
                          max_rounds: int = 10,
                          **api_kwargs):

@@ -12,10 +12,3 @@ class ResponseComposer(Protocol):
     aggregates the deltas to create TARecords and passes them through for the AgentRuntime to process.
     '''
     def process_context(self, records: list[ChatRecord], tools: list[dict]) -> Iterator[AgentMessage]: ...
-
-@runtime_checkable
-class ResponseComposerAsync(Protocol):
-    '''
-    Async implementation of ApiAggregator.
-    '''
-    async def process_context_async(self, records: list[ChatRecord], tools: list[dict]) -> AsyncGenerator[AgentMessage]: ...

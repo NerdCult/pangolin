@@ -2,7 +2,7 @@
 
 from typing import Protocol, AsyncGenerator
 import logging, asyncio, threading
-from ..core.interfaces import AgentRuntime, AgentRuntimeAsync, AgentRuntimeToQueue, MemoryManager,SkillManager, Toolbox, ToolboxAdvanced, ResponseComposer, ResponseComposerAsync, Guardrail, RAGComponent
+from ..core.interfaces import AgentRuntime, AgentRuntimeToQueue, MemoryManager,SkillManager, Toolbox, ToolboxAdvanced, ResponseComposer, Guardrail, RAGComponent
 from ..core.exceptions import PangolinTypeError, PangolinGuardRailDenial
 from ..core.types import GuardrailEvent
 from ..messages import ChatRecord, Part, AgentMessage, ToolCall
@@ -12,7 +12,7 @@ from ..memory_managers import SimpleMemoryManager
 LOGGER = logging.getLogger(__name__)
 
 
-class PangolinRuntime(AgentRuntime, AgentRuntimeToQueue, AgentRuntimeAsync, Protocol):
+class PangolinRuntime(AgentRuntime, AgentRuntimeToQueue, Protocol):
     '''
     default implementation of AgentRuntime.
     the only required parameter is composer: ResponseComposer (recommend the PangolinComposer)
@@ -204,8 +204,6 @@ class PangolinRuntime(AgentRuntime, AgentRuntimeToQueue, AgentRuntimeAsync, Prot
             record = ChatRecord(role='user', content=[Part(type='text', data={'text': record})])
         elif not isinstance(record, ChatRecord):
             raise PangolinTypeError('message does not implement ChatRecord')
-        if not isinstance(self.composer, ResponseComposerAsync):
-            raise PangolinTypeError('Aggregator does not implement ApiAggregatorAsync')
         
         LOGGER.info(f'user message recieved: {record.to_json()}')
         try:
@@ -226,7 +224,7 @@ class PangolinRuntime(AgentRuntime, AgentRuntimeToQueue, AgentRuntimeAsync, Prot
                 reason = {'reason': ''}
 
                 LOGGER.debug('entering inner loop')
-                async for agent_message in self.composer.process_context_async(context, tools):
+                async for agent_message in ensure_async_gen(self.composer.process_context,context, tools):
                     if stop.is_set(): break
                     LOGGER.debug(f'agent message recieved: {agent_message}')
                     await self._handle_agent_message(agent_message, tool_calls, blocked_tool_call_ids,  reason)
@@ -254,8 +252,6 @@ class PangolinRuntime(AgentRuntime, AgentRuntimeToQueue, AgentRuntimeAsync, Prot
             record = ChatRecord(role='user', content=[Part(type='text', data={'text': record})])
         elif not isinstance(record, ChatRecord):
             raise PangolinTypeError('message does not implement ChatRecord')
-        if not isinstance(self.composer, ResponseComposerAsync):
-            raise PangolinTypeError('aggregator does not implement ApiAggregatorAsync')
 
         LOGGER.info(f'user message recieved: {record.to_json()}')
 
@@ -279,7 +275,7 @@ class PangolinRuntime(AgentRuntime, AgentRuntimeToQueue, AgentRuntimeAsync, Prot
                 blocked_tool_call_ids = []
                 reason = {'reason': ''}
 
-                async for agent_message in self.composer.process_context_async(context,tools):
+                async for agent_message in ensure_async_gen(self.composer.process_context, context,tools):
                     await self._handle_agent_message(agent_message, tool_calls, blocked_tool_call_ids, reason)
                     await queue.put(agent_message)
 

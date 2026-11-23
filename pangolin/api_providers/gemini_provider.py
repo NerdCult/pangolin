@@ -8,7 +8,7 @@ except:
     raise PangolinImportError('using gemini_provider requires the google-genai library, pip install pangolin[gemini]')
 import logging, uuid, base64
 from typing import Iterator, Protocol, AsyncGenerator
-from ..core.interfaces import Provider, Client, ClientAsync, MemoryManager, Toolbox, SkillManager, Guardrail, RAGComponent , RAGComponentAsync
+from ..core.interfaces import Provider, Client, ClientAsync, MemoryManager, Toolbox, SkillManager, Guardrail, RAGComponent
 from ..memory_managers import SimpleMemoryManager
 from ..response_composers import PangolinComposer
 from ..agent_runtimes import PangolinRuntime
@@ -186,7 +186,7 @@ def gemini_agent_runtime(
                          skill_manager: SkillManager | None = None,
                          toolbox: Toolbox | None = None,
                          guardrail: Guardrail | None = None,
-                         rag_connection: RAGComponent | RAGComponentAsync | None = None,
+                         rag_connection: RAGComponent | None = None,
                          max_tokens: int = 32_000,
                          max_rounds: int = 10,
                          **api_kwargs):
