@@ -4,10 +4,10 @@ from ..core.exceptions import PangolinImportError
 try:
     from openai import OpenAI, AsyncOpenAI
 except:
-    raise PangolinImportError('using openai_provider requires installing the openai library')
+    raise PangolinImportError('using openai_provider requires the openai library, pip install pangolin[openai]')
 import json, logging
 from typing import Iterator, Protocol
-from ..core.interfaces import Provider, Client, ClientAsync, MemoryManager, SkillManager, Toolbox, Guardrail
+from ..core.interfaces import Provider, Client, ClientAsync, MemoryManager, SkillManager, Toolbox, Guardrail, RAGComponent, RAGComponentAsync
 from ..core.exceptions import PangolinTypeError
 from ..response_composers import PangolinComposer
 from ..agent_runtimes import PangolinRuntime
@@ -203,6 +203,7 @@ def openai_agent_runtime(url: str,
                          skill_manager: SkillManager | None = None,
                          toolbox: Toolbox | None = None,
                          guardrail: Guardrail | None = None,
+                         rag_connection: RAGComponent | RAGComponentAsync | None = None,
                          max_tokens: int = 32_000,
                          max_rounds: int = 10,
                          **api_kwargs):
@@ -214,6 +215,7 @@ def openai_agent_runtime(url: str,
         skill_manager=skill_manager,
         toolbox=toolbox,
         guardrail=guardrail,
+        rag_connection=rag_connection,
         max_tokens=max_tokens,
         max_rounds=max_rounds
     )

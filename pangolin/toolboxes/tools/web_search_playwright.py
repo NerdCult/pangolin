@@ -1,3 +1,5 @@
+#Copyright (c) 2026 Gene B. Denney. All Rights Reserved.
+
 import base64
 import threading
 from urllib.parse import quote_plus, urlparse, parse_qs

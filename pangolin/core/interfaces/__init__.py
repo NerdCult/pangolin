@@ -8,6 +8,7 @@ from .provider import Provider
 from .skill_manager import SkillManager, SkillManagerSkillMaker, SkillManagerDynamic
 from .toolbox import Toolbox, ToolboxAdvanced
 from .guardrail import Guardrail, GuardrailAsync
+from .rag_component import RAGComponent, RAGComponentAsync
 
 
 __all__ = [
@@ -23,6 +24,8 @@ __all__ = [
     'MemoryManager',
     'IdTrackedMemoryManager',
     'Provider',
+    'RAGComponent',
+    'RAGComponentAsync',
     'SkillManager',
     'SkillManagerSkillMaker',
     'SkillManagerDynamic',

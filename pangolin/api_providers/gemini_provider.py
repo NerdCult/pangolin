@@ -5,10 +5,10 @@ try:
     from google import genai
     from google.genai import types
 except:
-    raise PangolinImportError('using gemini_provider requires installing the google-genai library')
+    raise PangolinImportError('using gemini_provider requires the google-genai library, pip install pangolin[gemini]')
 import logging, uuid, base64
 from typing import Iterator, Protocol, AsyncGenerator
-from ..core.interfaces import Provider, Client, ClientAsync, MemoryManager, Toolbox, SkillManager, Guardrail
+from ..core.interfaces import Provider, Client, ClientAsync, MemoryManager, Toolbox, SkillManager, Guardrail, RAGComponent , RAGComponentAsync
 from ..memory_managers import SimpleMemoryManager
 from ..response_composers import PangolinComposer
 from ..agent_runtimes import PangolinRuntime
@@ -186,6 +186,7 @@ def gemini_agent_runtime(
                          skill_manager: SkillManager | None = None,
                          toolbox: Toolbox | None = None,
                          guardrail: Guardrail | None = None,
+                         rag_connection: RAGComponent | RAGComponentAsync | None = None,
                          max_tokens: int = 32_000,
                          max_rounds: int = 10,
                          **api_kwargs):
@@ -197,6 +198,7 @@ def gemini_agent_runtime(
         skill_manager=skill_manager,
         toolbox=toolbox,
         guardrail=guardrail,
+        rag_connection=rag_connection,
         max_tokens=max_tokens,
         max_rounds=max_rounds
     )
