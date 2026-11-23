@@ -37,30 +37,7 @@ class SmokeTestClient(Client, Protocol):
         self.show_system = show_system
         self.list_tools = list_tools
 
-    def get_stream(self, records, tools = None):
-        LOGGER.info(f'SMOKE TEST RECEIVED {len(records)} TARecords {len(tools) if tools else 0} tools')
-        if self.show_system and records[0].role == 'system':
-            LOGGER.info(f'SYSTEM:\n{records[0].content[0].data['text']}')
-            yield ApiEvent(event_type='replying',content= f'SYSTEM:\n{records[0].content[0].data['text']}')
-
-        if self.list_tools and tools:
-            LOGGER.info(f'TOOLS:\n{tools}')
-            yield ApiEvent(event_type='replying',content= f'TOOLS:\n{tools}')
-
-        while True:
-            if len(self.responses) ==0:
-                yield ApiEvent(event_type='replying', content='script exhausted')
-                yield ApiEvent(event_type='done', content='script exhausted')
-                break
-            next_event = self.responses.pop(0)
-
-            yield next_event
-
-            if next_event.event_type == 'done':
-                break
-
-
-    async def get_stream_async(self, records, tools = None):
+    async def get_stream(self, records, tools = None):
         LOGGER.info(f'SMOKE TEST RECEIVED {len(records)} TARecords {len(tools) if tools else 0} tools')
         print(f'SMOKE TEST RECEIVED {len(records)} TARecords {len(tools) if tools else 0} tools')
         if self.show_system and records[0].role == 'system':
@@ -87,7 +64,6 @@ class SmokeTestClient(Client, Protocol):
 def create_smoke_test_client(responses: list[ApiEvent] | None = None, show_system: bool = False, list_tools: bool = False):
     '''helper function to make a SmokeTestClient'''
     return SmokeTestClient(responses if responses else DEFAULT_SMOKE_TEST_EVENTS, show_system, list_tools)
-
 
 def smoke_test_runtime( 
                          system_prompt: str = '', 
