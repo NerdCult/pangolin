@@ -197,7 +197,7 @@ class PangolinRuntime(AgentRuntime, AgentRuntimeToQueue, AgentRuntimeAsync, Prot
 
         await self._add_context(record)
      
-    async def handle_user_message_async(self, record: ChatRecord | str, stop: threading.Event = threading.Event()) -> AsyncGenerator[AgentMessage]:
+    async def handle_user_message(self, record: ChatRecord | str, stop: threading.Event = threading.Event()) -> AsyncGenerator[AgentMessage]:
         ''' Main entry point to start the agentic loop. '''
         
         if isinstance(record, str):

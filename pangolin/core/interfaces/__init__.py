@@ -1,6 +1,6 @@
 #Copyright (c) 2026 Gene B. Denney. All Rights Reserved.
 
-from .agent_runtime import AgentRuntime, AgentRuntimeToQueue, AgentRuntimeAsync
+from .agent_runtime import AgentRuntime, AgentRuntimeToQueue
 from .response_composer import ResponseComposer, ResponseComposerAsync
 from .client import Client, ClientAsync
 from .memory_manager import MemoryManager, IdTrackedMemoryManager
@@ -13,7 +13,6 @@ from .rag_component import RAGComponent, RAGComponentAsync
 
 __all__ = [
     'AgentRuntime',
-    'AgentRuntimeAsync',
     'AgentRuntimeToQueue',
     'ResponseComposer',
     'ResponseComposerAsync',
