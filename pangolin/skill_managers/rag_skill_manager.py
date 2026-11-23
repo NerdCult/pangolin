@@ -35,6 +35,24 @@ class RAGSkillManager(SkillManager, RAGComponent, RAGComponentAsync):
                  model_dim: int = _MODEL_DIM,
                  collection_name: str = _COLLECTION
                  ):
+        ''' 
+        Loads skills based on the chat history.
+        docs_folder: the path to the .md skill files, default is current working directory/skills
+        db_path: the path to where to store the db, the default is current working directory/db/chroma
+        cache_dir: the path to where the embeddings cache is stored default is current working directory/db/fastembed_cache
+        process_last_n_user_records: control how many user messages to check against starting from the most recent, default is 1
+        n_results: how many results to return in the next skills() call
+        max_distance: affects how similar a document must be to count as a hit default is 0.45
+        max_chars: limits the maximum size of the skills() return default is 6000
+        chunk_size: controls the size of document chunking when stored in the db default is 1000
+        chunk_overlap: controls the size of overlap between stored chunks, default is 200
+        embed_batch: controls the batch size when embedding documents, default is 64
+        model_name: the model name used when embedding text, default is "BAAI/bge-small-en-v1.5"
+        model_dim: sets the text embedding size must be compatible with the model_name selected, default is 384
+        collection_name: sets the specific set of embedded files in the db, default is "skills"
+
+        CHANGING MODEL_NAME, MODEL_DIM, MAY REQUIRE RELOADING THE DOCUMENTS.
+        '''
         try:
             import fastembed
             import chromadb
@@ -55,14 +73,14 @@ class RAGSkillManager(SkillManager, RAGComponent, RAGComponentAsync):
         self.model_name = model_name
         self.model_dim = model_dim
         self.collection_name = collection_name
-        self.embed_model = self.model()
+        self.embed_model = self._model()
         self.db_client = chromadb.PersistentClient(path=str(self.db_path))
-        self.db_collection = self.collection()
+        self.db_collection = self._collection()
 
     def skills(self) -> str:
         return self.skills_this_turn
 
-    def model(self):
+    def _model(self):
         '''
             # Local embedder. fastembed runs an ONNX model on CPU. No API key.
     # First call downloads the weights once into cache_dir; after that
@@ -92,7 +110,7 @@ class RAGSkillManager(SkillManager, RAGComponent, RAGComponentAsync):
             )
         return embed_model
 
-    def collection(self):
+    def _collection(self):
         self.db_path.mkdir(parents=True, exist_ok=True)
         try:
             col = self.db_client.get_collection(self.collection_name)
