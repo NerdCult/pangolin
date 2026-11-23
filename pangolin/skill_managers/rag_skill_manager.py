@@ -30,11 +30,15 @@ class RAGSkillManager(SkillManager, RAGComponent, RAGComponentAsync):
                  max_chars: int = 6000,
                  chunk_size: int = 1000,
                  chunk_overlap: int = 200,
-                 embed_batch: int = 64):
+                 embed_batch: int = 64,
+                 model_name: str =_MODEL_NAME,
+                 model_dim: int = _MODEL_DIM,
+                 collection_name: str = _COLLECTION
+                 ):
         try:
-            from fastembed import TextEmbedding
+            import fastembed
             import chromadb
-        except:
+        except ImportError:
             raise PangolinImportError('RAGSkillManager requires extra dependencies run pip install pangolin[rag]')
         
         self.skills_this_turn: str = ''
@@ -48,15 +52,17 @@ class RAGSkillManager(SkillManager, RAGComponent, RAGComponentAsync):
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
         self.embed_batch = embed_batch
-        self._model = None
-        self._client = None
-        self._col = None
+        self.model_name = model_name
+        self.model_dim = model_dim
+        self.collection_name = collection_name
+        self.embed_model = self.model()
+        self.db_client = chromadb.PersistentClient(path=str(self.db_path))
+        self.db_collection = self.collection()
 
     def skills(self) -> str:
         return self.skills_this_turn
 
-    @property
-    def model(self, model_name = _MODEL_NAME, model_dim = _MODEL_DIM):
+    def model(self):
         '''
             # Local embedder. fastembed runs an ONNX model on CPU. No API key.
     # First call downloads the weights once into cache_dir; after that
@@ -77,49 +83,45 @@ class RAGSkillManager(SkillManager, RAGComponent, RAGComponentAsync):
     # actually called, delete db_path, and reindex. Old vectors are not
     comparable to new ones. This property can go.
     '''
-        if self._model is None:
-            self.cache_dir.mkdir(parents=True, exist_ok=True)
-            self._model = TextEmbedding(model_name=model_name, cache_dir=str(self.cache_dir))
-            if self._model.embedding_size != model_dim:
-                raise PangolinValueError(
-                    f'{model_name} reported dim {self._model.embedding_size}, expected {model_dim}'
-                )
-        return self._model
+        from fastembed import TextEmbedding
+        self.cache_dir.mkdir(parents=True, exist_ok=True)
+        embed_model = TextEmbedding(model_name=self.model_name, cache_dir=str(self.cache_dir))
+        if embed_model.embedding_size != self.model_dim:
+            raise PangolinValueError(
+                f'{self.model_name} reported dim {self.embed_model.embedding_size}, expected {self.model_dim}'
+            )
+        return embed_model
 
-    @property
-    def collection(self, model_name = _MODEL_NAME, model_dim = _MODEL_DIM):
-        if self._col is None:
-            self.db_path.mkdir(parents=True, exist_ok=True)
-            self._client = chromadb.PersistentClient(path=str(self.db_path))
-            try:
-                col = self._client.get_collection(_COLLECTION)
-            except Exception:
-                col = None
-            if col is None:
-                col = self._client.get_or_create_collection(
-                    _COLLECTION,
-                    metadata={
-                        "hnsw:space": "cosine",
-                        "embed_model": model_name,
-                        "embed_dim": model_dim,
-                    },
+    def collection(self):
+        self.db_path.mkdir(parents=True, exist_ok=True)
+        try:
+            col = self.db_client.get_collection(self.collection_name)
+        except Exception:
+            col = None
+        if col is None:
+            col = self.db_client.get_or_create_collection(
+                self.collection_name,
+                metadata={
+                    "hnsw:space": "cosine",
+                    "embed_model": self.model_name,
+                    "embed_dim": self.model_dim,
+                },
+            )
+        else:
+            meta = col.metadata or {}
+            if meta.get("embed_model") != self.model_name or meta.get("embed_dim") != self.model_dim:
+                raise PangolinValueError(
+                    f'collection was indexed with {meta.get("embed_model")} '
+                    f'dim={meta.get("embed_dim")}; this process is {self.model_name} '
+                    f'dim={self.model_dim}. delete {self.db_path} and reindex.'
                 )
-            else:
-                meta = col.metadata or {}
-                if meta.get("embed_model") != model_name or meta.get("embed_dim") != model_dim:
-                    raise PangolinValueError(
-                        f'collection was indexed with {meta.get("embed_model")} '
-                        f'dim={meta.get("embed_dim")}; this process is {model_name} '
-                        f'dim={model_dim}. delete {self.db_path} and reindex.'
-                    )
-            self._col = col
-        return self._col
+        return col
 
     def _embed_docs(self, texts: list[str]) -> list[list[float]]:
-        return [v.tolist() for v in self.model.passage_embed(texts)]
+        return [v.tolist() for v in self.embed_model.passage_embed(texts)]
 
     def _embed_query(self, text: str) -> list[float]:
-        return next(self.model.query_embed(text)).tolist()
+        return next(self.embed_model.query_embed(text)).tolist()
 
     def _format(self, hits: dict) -> str:
         docs = (hits.get("documents") or [[]])[0]
@@ -156,7 +158,7 @@ class RAGSkillManager(SkillManager, RAGComponent, RAGComponentAsync):
 
     def reload_skills(self) -> int:
         ''' Simple wipe and reload, only needs to be run once as long as the database storage persists and the source files have not changed. '''
-        self.collection.delete(where={"source": {"$ne": ""}})
+        self.db_collection.delete(where={"source": {"$ne": ""}})
         if self.chunk_overlap >= self.chunk_size:
             raise PangolinValueError('chunk_overlap must be smaller than chunk_size')
         ids, docs, metas = [], [], []
@@ -178,7 +180,7 @@ class RAGSkillManager(SkillManager, RAGComponent, RAGComponentAsync):
         for start in range(0, len(ids), self.embed_batch):
             stop = start + self.embed_batch
             vectors = self._embed_docs(docs[start:stop])
-            self.collection.upsert(
+            self.db_collection.upsert(
                 ids=ids[start:stop],
                 embeddings=vectors,
                 documents=docs[start:stop],
@@ -193,7 +195,7 @@ class RAGSkillManager(SkillManager, RAGComponent, RAGComponentAsync):
             self.skills_this_turn = ""
             return
         vec = self._embed_query(query)
-        hits = self.collection.query(
+        hits = self.db_collection.query(
             query_embeddings=[vec],
             n_results=self.n_results,
             include=["documents", "metadatas", "distances"],
@@ -206,7 +208,7 @@ class RAGSkillManager(SkillManager, RAGComponent, RAGComponentAsync):
             self.skills_this_turn = ""
             return
         vec = self._embed_query(query)
-        hits = self.collection.query(
+        hits = self.db_collection.query(
             query_embeddings=[vec],
             n_results=self.n_results,
             include=["documents", "metadatas", "distances"],
