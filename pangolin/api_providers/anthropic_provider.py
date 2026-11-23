@@ -163,7 +163,8 @@ class AnthropicClient(Client, ClientAsync, Protocol):
             })
         return converted
     
-    def _process_event(self, event, calls):
+    def _process_event(self, event):
+        calls: dict[str,ToolCall] = {}
         event_type = getattr(event, "type", None)
 
         if event_type == "text":
@@ -219,17 +220,16 @@ class AnthropicClient(Client, ClientAsync, Protocol):
         if anthropic_tools:
             self.api_kwargs["tools"] = anthropic_tools
 
-        calls: dict[int, ToolCall] = {}
 
         # messages.stream() yields SDK helper events (text, thinking, input_json,
         # content_block_start/stop), not the raw SSE event types.
         with self.connection.messages.stream(**self.api_kwargs) as stream:
             for event in stream:
-                api_event = self._process_event(event, calls)
+                api_event = self._process_event(event)
                 if api_event:
                     yield api_event
 
-        yield ApiEvent(event_type="done", content="", tool_calls=list(calls.values()))
+        yield ApiEvent(event_type="done", content="")
 
     async def get_stream_async(self, records: list[ChatRecord], tools: list[dict] | None = None) -> AsyncGenerator[ApiEvent]:
         ''' calls Anthropic.connection.messages.stream() and converts the MessageStream events to the internal ApiEvent format '''
@@ -243,17 +243,16 @@ class AnthropicClient(Client, ClientAsync, Protocol):
         if anthropic_tools:
             self.api_kwargs["tools"] = anthropic_tools
 
-        calls: dict[int, ToolCall] = {}
 
         # messages.stream() yields SDK helper events (text, thinking, input_json,
         # content_block_start/stop), not the raw SSE event types.
         async with self.connection_async.messages.stream(**self.api_kwargs) as stream:
             async for event in stream:
-                api_event = self._process_event(event, calls)
+                api_event = self._process_event(event)
                 if api_event:
                     yield api_event
 
-        yield ApiEvent(event_type="done", content="", tool_calls=list(calls.values()))
+        yield ApiEvent(event_type="done", content="")
 
 
 class AnthropicProvider(Provider):
