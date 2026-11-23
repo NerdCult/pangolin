@@ -203,7 +203,7 @@ class PangolinRuntime(AgentRuntime, AgentRuntimeToQueue, AgentRuntimeAsync, Prot
         if isinstance(record, str):
             record = ChatRecord(role='user', content=[Part(type='text', data={'text': record})])
         elif not isinstance(record, ChatRecord):
-            raise PangolinTypeError('message does not implement TARecord')
+            raise PangolinTypeError('message does not implement ChatRecord')
         if not isinstance(self.composer, ResponseComposerAsync):
             raise PangolinTypeError('Aggregator does not implement ApiAggregatorAsync')
         
@@ -253,7 +253,7 @@ class PangolinRuntime(AgentRuntime, AgentRuntimeToQueue, AgentRuntimeAsync, Prot
         if isinstance(record, str):
             record = ChatRecord(role='user', content=[Part(type='text', data={'text': record})])
         elif not isinstance(record, ChatRecord):
-            raise PangolinTypeError('message does not implement TARecord')
+            raise PangolinTypeError('message does not implement ChatRecord')
         if not isinstance(self.composer, ResponseComposerAsync):
             raise PangolinTypeError('aggregator does not implement ApiAggregatorAsync')
 
@@ -264,31 +264,23 @@ class PangolinRuntime(AgentRuntime, AgentRuntimeToQueue, AgentRuntimeAsync, Prot
             done.set()
 
         try:
-            if isinstance(self.guardrail, GuardrailAsync):
-                await self._user_message_guardrail_check(record)
-            else:
-                await asyncio.to_thread(self._user_message_guardrail_check, record)
+            await self._user_message_guardrail_check(record)
 
             if self.rag_connection:
-                history = self.memory_manager.get_history()
-                if isinstance(self.rag_connection, RAGComponentAsync):
-                    await self.rag_connection.retrieve_with_chat_history_async(history)
-                else:
-                    await asyncio.to_thread(self.rag_connection.retrieve_with_chat_history, history)
+                history = await ensure_async(self.memory_manager.get_history)
+                await ensure_async(self.rag_connection.retrieve_with_chat_history, history)
 
             for _ in range(self.max_rounds):
                 if stop.is_set(): break
-                
-                context = self._get_context() # get the context to send to the api
+                 
+                context = await self._get_context() # get the context to send to the api
+                tools = await self._tools()
                 tool_calls = [] # initialzed to store tool calls 
                 blocked_tool_call_ids = []
                 reason = {'reason': ''}
 
-                async for agent_message in self.composer.process_context_async(context, self._tools()):
-                    if isinstance(self.guardrail, GuardrailAsync):
-                        await self._handle_agent_message(agent_message, tool_calls, blocked_tool_call_ids,  reason)
-                    else:
-                        await asyncio.to_thread(self._handle_agent_message, agent_message, tool_calls, blocked_tool_call_ids, reason)
+                async for agent_message in self.composer.process_context_async(context,tools):
+                    await self._handle_agent_message(agent_message, tool_calls, blocked_tool_call_ids, reason)
                     await queue.put(agent_message)
 
                     if stop.is_set(): 
@@ -297,7 +289,7 @@ class PangolinRuntime(AgentRuntime, AgentRuntimeToQueue, AgentRuntimeAsync, Prot
                 # if the stream ends with no tool calls the loop exits
                 if tool_calls and self.toolbox:
                     LOGGER.debug(f'runtime got {len(tool_calls)} tool calls')
-                    self._handle_tool_calls(tool_calls, blocked_tool_call_ids, reason['reason'])
+                    await self._handle_tool_calls(tool_calls, blocked_tool_call_ids, reason['reason'])
                 else:
                     await task_done()
                     break
