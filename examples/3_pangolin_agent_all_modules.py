@@ -37,7 +37,7 @@ session = openai_agent_runtime(
     # does the thing system prompts do (tells the agent how to act and behave)
     system_prompt=SYSTEM_PROMPT,
 
-    # writes full history and keeps a configurable size of the conversation in-memory 
+    # writes full history and keeps a configurable size of the conversation in-memory, reloads portion of history if chat_id already exists in the database
     memory_manager=SQLiteMemoryManager(chat_id=CHAT_ID),
 
     # provides a menu of available skills and guidance on how to load/unload/create them. must be paired with a toolbox that implmenets ToolboxAdvanced
