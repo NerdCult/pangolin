@@ -2,9 +2,7 @@
 
 import logging
 from pathlib import Path
-from fastembed import TextEmbedding
-import chromadb
-from ..core.exceptions import PangolinValueError
+from ..core.exceptions import PangolinValueError, PangolinImportError
 from ..core.interfaces import SkillManager, RAGComponent, RAGComponentAsync
 
 LOGGER = logging.getLogger(__name__)
@@ -33,6 +31,12 @@ class RAGSkillManager(SkillManager, RAGComponent, RAGComponentAsync):
                  chunk_size: int = 1000,
                  chunk_overlap: int = 200,
                  embed_batch: int = 64):
+        try:
+            from fastembed import TextEmbedding
+            import chromadb
+        except:
+            raise PangolinImportError('RAGSkillManager requires extra dependencies run pip install pangolin[rag]')
+        
         self.skills_this_turn: str = ''
         self.docs_folder = Path(docs_folder)
         self.db_path = Path(db_path)

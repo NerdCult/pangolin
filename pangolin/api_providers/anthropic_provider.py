@@ -4,7 +4,7 @@ from ..core.exceptions import PangolinImportError
 try: 
     from anthropic import Anthropic, AsyncAnthropic
 except:
-    raise PangolinImportError('using anthropic_provider requires installing the anthropic library')
+    raise PangolinImportError('using anthropic_provider requires the anthropic library, pip install pangolin[anthropic]')
 from typing import Iterator, Protocol, AsyncGenerator
 import logging
 from ..messages import ChatRecord, Part, ApiEvent, ToolCall

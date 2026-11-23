@@ -1,7 +1,5 @@
 #Copyright (c) 2026 Gene B. Denney. All Rights Reserved.
 
-from ddgs import DDGS
-
 SCHEMA = {
     "name": "web_search",
     "description": "Search the web for additional information. Use this tool, in conjunction with the fetch_page tool, liberally to make sure information is up to date. Returns titles, URLs and snippets. use the fetch_page tool to open a link and view the full page.",
@@ -17,6 +15,10 @@ SCHEMA = {
 
 
 def run(query: str, max_results: int =5):
+    try:
+        from ddgs import DDGS
+    except:
+        return 'web_search requires extra dependencies (ddgs), the user needs to use pip install pangolin[tools]'
     with DDGS() as d:
         results = d.text(query, max_results=int(max_results))
     return [{"title": r.get("title"), "url": r.get("href"), "snippet": r.get("body")} for r in results]
