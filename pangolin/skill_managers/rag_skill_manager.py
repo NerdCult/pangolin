@@ -3,7 +3,7 @@
 import logging
 from pathlib import Path
 from ..core.exceptions import PangolinValueError, PangolinImportError
-from ..core.interfaces import SkillManager, RAGComponent, RAGComponentAsync
+from ..core.interfaces import SkillManager, RAGComponent
 
 LOGGER = logging.getLogger(__name__)
 
@@ -15,7 +15,7 @@ _MODEL_DIM = 384
 _COLLECTION = "skills"
 
 
-class RAGSkillManager(SkillManager, RAGComponent, RAGComponentAsync):
+class RAGSkillManager(SkillManager, RAGComponent):
     '''
     SkillManager whose skills() string is the chunks retrieved for this turn.
     Indexing is explicit. Retrieval overwrites the stash. It does not append.
@@ -207,20 +207,7 @@ class RAGSkillManager(SkillManager, RAGComponent, RAGComponentAsync):
         LOGGER.info('indexed %s chunks from %s', len(ids), self.docs_folder)
         return len(ids)
 
-    def retrieve_with_chat_history(self, chat_history):
-        query = self._query_text(chat_history)
-        if not query:
-            self.skills_this_turn = ""
-            return
-        vec = self._embed_query(query)
-        hits = self.db_collection.query(
-            query_embeddings=[vec],
-            n_results=self.n_results,
-            include=["documents", "metadatas", "distances"],
-        )
-        self.skills_this_turn = self._format(hits)
-
-    async def retrieve_with_chat_history_async(self, chat_history):
+    async def retrieve_with_chat_history(self, chat_history):
         query = self._query_text(chat_history)
         if not query:
             self.skills_this_turn = ""

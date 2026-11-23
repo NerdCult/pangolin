@@ -40,7 +40,7 @@ class SQLiteMemoryManager(IdTrackedMemoryManager):
                 LOGGER.info(f'previous session found for {self.chat_id} last used: {chat_summary.last_used} name:{chat_summary.name} description: {chat_summary.description}')
                 self._reload()
                 if len(self.memory) > 0 and self.memory[0].role != 'user':      # APIs like the first chat  record to be a user message so trim the reloaded context
-                    self.trim_context() 
+                    self.trim_history() 
             else: # create a new chat history
                 LOGGER.info(f'creating new session history for {self.chat_id}')
                 self._set_chat_summary( '', '') # creates a session entry in the chat_summaries table with empty name and description
@@ -138,7 +138,7 @@ class SQLiteMemoryManager(IdTrackedMemoryManager):
             # Keep your existing safety guard
             if self.memory and self.memory[0].role != 'user':
                 LOGGER.info("Reloaded context did not start with user message, trimming...")
-                self.trim_context()
+                self.trim_history()
                 
             total_tokens = sum(r.token_count for r in self.memory) if hasattr(self.memory[0], 'token_count') else '?'
             LOGGER.debug(f"Reloaded {len(self.memory)} records (~{total_tokens} tokens)")
@@ -179,11 +179,11 @@ class SQLiteMemoryManager(IdTrackedMemoryManager):
 
         LOGGER.debug(f'summary updated for session {self.chat_id}')
 
-    def get_context(self) -> list[ChatRecord]:
+    def get_history(self) -> list[ChatRecord]:
         return self.memory
 
     # append a ChatRecord to the history both in memory and in the database
-    def add_context(self, record: ChatRecord):
+    def add_record(self, record: ChatRecord):
         self.memory.append(record)
         tokens = message_tokens(record)
         db_connection = sqlite3.connect(self.db_path)
@@ -213,7 +213,7 @@ class SQLiteMemoryManager(IdTrackedMemoryManager):
         return temp
 
     # trim the context 
-    def trim_context(self):
+    def trim_history(self):
         LOGGER.debug('trimming context')
         dropped_tool_call_ids: set[str] = set()
 

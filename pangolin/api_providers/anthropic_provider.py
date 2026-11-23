@@ -8,7 +8,7 @@ except:
 from typing import Iterator, Protocol, AsyncGenerator
 import logging
 from ..messages import ChatRecord, Part, ApiEvent, ToolCall
-from ..core.interfaces import Client, Provider, ClientAsync, MemoryManager, Toolbox, SkillManager, Guardrail, RAGComponent, RAGComponentAsync
+from ..core.interfaces import Client, Provider, MemoryManager, Toolbox, SkillManager, Guardrail, RAGComponent
 from ..memory_managers import SimpleMemoryManager
 from ..response_composers import PangolinComposer
 from ..agent_runtimes import PangolinRuntime
@@ -17,7 +17,7 @@ LOGGER = logging.getLogger(__name__)
 
 DEFAULT_MAX_TOKENS = 8192
 
-class AnthropicClient(Client, ClientAsync, Protocol):
+class AnthropicClient(Client, Protocol):
     def __init__(self, connection: Anthropic, model_name: str, max_tokens: int = DEFAULT_MAX_TOKENS, **api_kwargs):
         '''
         connection: instance of anthropic.Anthropic
@@ -208,30 +208,7 @@ class AnthropicClient(Client, ClientAsync, Protocol):
             LOGGER.error(f'api error {message}')
             return ApiEvent(event_type='error', content=message)
 
-    def get_stream(self, records: list[ChatRecord], tools: list[dict] | None = None) -> Iterator[ApiEvent]:
-        ''' calls Anthropic.connection.messages.stream() and converts the MessageStream events to the internal ApiEvent format '''
-        LOGGER.info(f'get_stream with {len(records)} records and {len(tools) if tools else '0'} tools')
-        system, wire = self._records_to_anthropic(records)
-        anthropic_tools = self._to_anthropic_tools(tools)
-
-        self.api_kwargs["messages"] = wire
-        if system:
-            self.api_kwargs["system"] = system
-        if anthropic_tools:
-            self.api_kwargs["tools"] = anthropic_tools
-
-
-        # messages.stream() yields SDK helper events (text, thinking, input_json,
-        # content_block_start/stop), not the raw SSE event types.
-        with self.connection.messages.stream(**self.api_kwargs) as stream:
-            for event in stream:
-                api_event = self._process_event(event)
-                if api_event:
-                    yield api_event
-
-        yield ApiEvent(event_type="done", content="")
-
-    async def get_stream_async(self, records: list[ChatRecord], tools: list[dict] | None = None) -> AsyncGenerator[ApiEvent]:
+    async def get_stream(self, records: list[ChatRecord], tools: list[dict] | None = None) -> AsyncGenerator[ApiEvent]:
         ''' calls Anthropic.connection.messages.stream() and converts the MessageStream events to the internal ApiEvent format '''
         LOGGER.info(f'get_stream with {len(records)} records and {len(tools) if tools else '0'} tools')
         system, wire = self._records_to_anthropic(records)
@@ -299,7 +276,7 @@ def anthropic_agent_runtime(url: str,
                          skill_manager: SkillManager | None = None,
                          toolbox: Toolbox | None = None,
                          guardrail: Guardrail | None = None, 
-                         rag_connection: RAGComponent | RAGComponentAsync | None = None,
+                         rag_connection: RAGComponent | None = None,
                          max_tokens: int = 32_000,
                          max_rounds: int = 10,
                          **api_kwargs):

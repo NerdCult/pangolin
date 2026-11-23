@@ -11,14 +11,7 @@ class AgentRuntime(Protocol):
     manages the ApiAggregator, SkillsManager, Toolbox, and Memory Manager
     routes steps between the different components.
     '''
-    def handle_user_message(self, record: ChatRecord) -> Iterator[AgentMessage]: ...
-
-@runtime_checkable
-class AgentRuntimeAsync(Protocol):
-    '''
-    Adds AgentRuntime method to run agent requests asychronously.
-    '''
-    async def handle_user_message_async(self, record: ChatRecord) -> AsyncGenerator[AgentMessage]: ...
+    async def handle_user_message(self, record: ChatRecord) -> AsyncGenerator[AgentMessage]: ...
 
 @runtime_checkable
 class AgentRuntimeToQueue(Protocol):

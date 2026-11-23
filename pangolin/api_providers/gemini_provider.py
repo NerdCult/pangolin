@@ -8,7 +8,7 @@ except:
     raise PangolinImportError('using gemini_provider requires the google-genai library, pip install pangolin[gemini]')
 import logging, uuid, base64
 from typing import Iterator, Protocol, AsyncGenerator
-from ..core.interfaces import Provider, Client, ClientAsync, MemoryManager, Toolbox, SkillManager, Guardrail, RAGComponent , RAGComponentAsync
+from ..core.interfaces import Provider, Client, MemoryManager, Toolbox, SkillManager, Guardrail, RAGComponent
 from ..memory_managers import SimpleMemoryManager
 from ..response_composers import PangolinComposer
 from ..agent_runtimes import PangolinRuntime
@@ -21,7 +21,7 @@ DUMMY_SIGNATURE = b"skip_thought_signature_validator"
 # Gemini only knows 'user' and 'model'. Tool results go back as 'user'.
 ROLE_MAP = {"user": "user", "assistant": "model", "tool": "user"}
 
-class GeminiClient(Client, ClientAsync, Protocol):
+class GeminiClient(Client, Protocol):
     def __init__(self, client: genai.Client, model_name: str, **api_kwargs):
         '''
         client: a google.genai.Client 
@@ -104,31 +104,7 @@ class GeminiClient(Client, ClientAsync, Protocol):
                     return ApiEvent(event_type="thinking" if part.thought else "replying",
                                    content=part.text)
 
-    def get_stream(self, records: list[ChatRecord], tools: list[dict] | None = None) -> Iterator[ApiEvent]:
-        ''' Sets the config with types.GenerateContentConfig() and calls models.generate_content(stream) converting the stream of GenerateContentResponse to ApiEvents '''
-        system, contents = self._records_to_gemini(records)
-        LOGGER.info(f'get_stream with {len(contents)} contents and {len(tools) if tools else 0} tools')
-        config = types.GenerateContentConfig(
-            system_instruction=system,
-            tools=self._tools_to_gemini(tools),
-            **self.api_kwargs
-        )
-
-        calls, finish_event = [], ApiEvent(event_type='done')
-        for chunk in self.client.models.generate_content_stream(
-                model=self.model_name, contents=contents, config=config):
-            if not chunk.candidates:
-                continue
-            api_event = self._process_chunk(chunk, calls, finish_event)
-            if api_event:
-                yield api_event
-
-        if calls:
-            LOGGER.info(f'tool calls: {calls}')
-            yield ApiEvent(event_type="tool_call", tool_calls=calls)
-        yield finish_event
-
-    async def get_stream_async(self, messages: list[ChatRecord], tools: list[dict] | None = None) -> AsyncGenerator[ApiEvent]:
+    async def get_stream(self, messages: list[ChatRecord], tools: list[dict] | None = None) -> AsyncGenerator[ApiEvent]:
         ''' Sets the config with types.GenerateContentConfig() and calls models.generate_content(stream) converting the stream of GenerateContentResponse to ApiEvents '''
         system, contents = self._records_to_gemini(messages)
         LOGGER.info(f'get_stream with {len(contents)} contents and {len(tools) if tools else 0} tools')
@@ -186,7 +162,7 @@ def gemini_agent_runtime(
                          skill_manager: SkillManager | None = None,
                          toolbox: Toolbox | None = None,
                          guardrail: Guardrail | None = None,
-                         rag_connection: RAGComponent | RAGComponentAsync | None = None,
+                         rag_connection: RAGComponent | None = None,
                          max_tokens: int = 32_000,
                          max_rounds: int = 10,
                          **api_kwargs):

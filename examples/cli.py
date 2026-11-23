@@ -47,28 +47,7 @@ def printout(a, behaviors):
 
 def cli(session: AgentRuntime):
     '''simple command line interface to use an AgentRuntime. Press any key cancel the agent's turn'''
-    stop = threading.Event()
-
-    def on_key(key):
-        stop.set()
-
-    listener = keyboard.Listener(on_press=on_key)
-    listener.start()
-
-    print ("press any key to interrupt the agent's turn")
-
-    while True:
-        behaviors = {'thinking': False,
-        'replying': False,
-        'using_tool': False}                                        
-        user_input = input(Fore.GREEN + '\n>>> ')
-
-        stop.clear()
-
-        for a in session.handle_user_message(user_record(text=user_input), stop):
-            printout(a, behaviors)
-
-            if stop.is_set(): break
+    asyncio.run(cli_async(session))
 
 async def cli_async(session: AgentRuntime):
     '''same as cli() but implements the async work flow '''
@@ -94,7 +73,7 @@ async def cli_async(session: AgentRuntime):
 
         stop.clear()
 
-        async for a in session.handle_user_message_async(user_record(text=user_input), stop):
+        async for a in session.handle_user_message(user_record(text=user_input), stop):
             printout(a, behaviors)
 
             if stop.is_set(): break

@@ -2,7 +2,7 @@
 
 import logging, copy, asyncio
 from typing import Protocol
-from ..core.interfaces import  Client, ClientAsync, MemoryManager, SkillManager, Toolbox, Guardrail, RAGComponent, RAGComponentAsync
+from ..core.interfaces import  Client, MemoryManager, SkillManager, Toolbox, Guardrail, RAGComponent
 from ..response_composers import PangolinComposer
 from ..memory_managers import SimpleMemoryManager
 from ..agent_runtimes import PangolinRuntime
@@ -31,36 +31,13 @@ DEFAULT_SMOKE_TEST_EVENTS: list[ApiEvent] =[
     # end second round, will yield script exahustion after this
 ]
 
-class SmokeTestClient(Client, ClientAsync, Protocol):
+class SmokeTestClient(Client, Protocol):
     def __init__(self, responses: list[ApiEvent] = DEFAULT_SMOKE_TEST_EVENTS, show_system: bool = False, list_tools: bool = False):
         self.responses = copy.deepcopy(responses)
         self.show_system = show_system
         self.list_tools = list_tools
 
-    def get_stream(self, records, tools = None):
-        LOGGER.info(f'SMOKE TEST RECEIVED {len(records)} TARecords {len(tools) if tools else 0} tools')
-        if self.show_system and records[0].role == 'system':
-            LOGGER.info(f'SYSTEM:\n{records[0].content[0].data['text']}')
-            yield ApiEvent(event_type='replying',content= f'SYSTEM:\n{records[0].content[0].data['text']}')
-
-        if self.list_tools and tools:
-            LOGGER.info(f'TOOLS:\n{tools}')
-            yield ApiEvent(event_type='replying',content= f'TOOLS:\n{tools}')
-
-        while True:
-            if len(self.responses) ==0:
-                yield ApiEvent(event_type='replying', content='script exhausted')
-                yield ApiEvent(event_type='done', content='script exhausted')
-                break
-            next_event = self.responses.pop(0)
-
-            yield next_event
-
-            if next_event.event_type == 'done':
-                break
-
-
-    async def get_stream_async(self, records, tools = None):
+    async def get_stream(self, records, tools = None):
         LOGGER.info(f'SMOKE TEST RECEIVED {len(records)} TARecords {len(tools) if tools else 0} tools')
         print(f'SMOKE TEST RECEIVED {len(records)} TARecords {len(tools) if tools else 0} tools')
         if self.show_system and records[0].role == 'system':
@@ -88,14 +65,13 @@ def create_smoke_test_client(responses: list[ApiEvent] | None = None, show_syste
     '''helper function to make a SmokeTestClient'''
     return SmokeTestClient(responses if responses else DEFAULT_SMOKE_TEST_EVENTS, show_system, list_tools)
 
-
 def smoke_test_runtime( 
                          system_prompt: str = '', 
                          memory_manager: MemoryManager | None = None,
                          skill_manager: SkillManager | None = None,
                          toolbox: Toolbox | None = None,
                          guardrail: Guardrail | None = None,
-                         rag_connection: RAGComponent | RAGComponentAsync | None = None,
+                         rag_connection: RAGComponent | None = None,
                          max_tokens: int = 32_000,
                          max_rounds: int = 10,
                          responses: list[ApiEvent] | None = None,

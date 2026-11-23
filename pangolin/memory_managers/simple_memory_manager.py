@@ -15,15 +15,15 @@ class SimpleMemoryManager(MemoryManager):
         LOGGER.info('__init__')
         self.memory: list = []
 
-    def get_context(self) -> list[ChatRecord]:
+    def get_history(self) -> list[ChatRecord]:
         return self.memory
 
-    def add_context(self, record: ChatRecord):
+    def add_record(self, record: ChatRecord):
         self.memory.append(record)
         LOGGER.debug(f'message added {record}')
 
     # handle requests from AgentRuntime to trim context
-    def trim_context(self):
+    def trim_history(self):
         LOGGER.debug('trimming context')
         dropped_tool_call_ids: set[str] = set() #accumulate dropped tool calls so the paired tool call results can be cleared
 

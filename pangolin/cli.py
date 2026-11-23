@@ -1,5 +1,6 @@
 #Copyright (c) 2026 Gene B. Denney. All Rights Reserved.
 
+import asyncio
 from .core.interfaces import AgentRuntime
 from .messages.chat_record import user_record
 
@@ -45,7 +46,9 @@ def cli(session: AgentRuntime, show_welcome: bool = True):
 
     if show_welcome:
         print ("Welcome to the Pangolin cli, a minimal AI Agentic interface!\nPress ctrl+c to interrupt the agent's turn.\nThe Github repo examples provides a cli with color coded text, omitted here to keep dependencies minimal.")
+    asyncio.run(cli_async(session))
 
+async def cli_async(session: AgentRuntime):
     while True:
         behaviors = {'thinking': False,
         'replying': False,
@@ -53,7 +56,7 @@ def cli(session: AgentRuntime, show_welcome: bool = True):
         user_input = input('\nUSER>>> ')
 
         try:
-            for a in session.handle_user_message(user_record(text=user_input)):
+            async for a in session.handle_user_message(user_record(text=user_input)):
                 printout(a, behaviors)
         except KeyboardInterrupt:
             print ('AGENT TURN CANCELLED')
