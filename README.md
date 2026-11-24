@@ -71,3 +71,8 @@ from pangolin_agent import copy_built_in_tools, copy_built_in_skills
 copy_built_in_tools() 
 copy_built_in_skills()
 ```
+
+
+## The meta development experience
+
+Pangolin ships with built-in skill files explaining how to develop with it. use the two copy_built_in_x functions above, and start your session with AdvancedSkillManager and PangolinToolbox, and your agent can help you understand how to develop with pangolin_agent. 
