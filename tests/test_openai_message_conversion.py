@@ -1,8 +1,8 @@
 #Copyright (c) 2026 Gene B. Denney. All Rights Reserved.
 
 import pytest, json
-from pangolin.api_providers.open_ai_provider import OpenAIClient
-from pangolin.messages import ChatRecord, Part, ToolCall
+from pangolin_agent.api_providers.open_ai_provider import OpenAIClient
+from pangolin_agent.messages import ChatRecord, Part, ToolCall
 from openai import OpenAI
 
 @pytest.fixture

@@ -2,8 +2,8 @@
 
 import pytest
 from anthropic import Anthropic
-from pangolin.api_providers.anthropic_provider import AnthropicClient
-from pangolin.messages import ChatRecord, Part, ToolCall
+from pangolin_agent.api_providers.anthropic_provider import AnthropicClient
+from pangolin_agent.messages import ChatRecord, Part, ToolCall
 
 @pytest.fixture
 def mock_anthropic_client():

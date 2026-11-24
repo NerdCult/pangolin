@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "pangolin"
+name = "pangolin-agent"
 version = "0.1.0b1"
 description = "A lightweight, modular, interface based AI Agentic library."
 dynamic = ["readme"]
@@ -25,13 +25,13 @@ openai = ["openai>=1.0.0"]
 anthropic = ["anthropic>=0.30.0"]
 gemini = ["google-genai>=3.6.0"]
 tools = ["beautifulsoup4>=4.12.0", "ddgs>=9.0.0", "requests>=2.32.0"]
-rag = ["fastembed", 'chromadb]
+rag = ["fastembed", "chromadb"]
 all = [
-    "pangolin[openai,anthropic,gemini,tools,rag]"
+    "pangolin_agent[openai,anthropic,gemini,tools,rag]"
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["pangolin"]
+packages = ["pangolin_agent"]
 
 [tool.hatch.build.targets.sdist]
-include = ["/pangolin"]
+include = ["/pangolin_agent"]

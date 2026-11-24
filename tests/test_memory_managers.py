@@ -1,8 +1,8 @@
 #Copyright (c) 2026 Gene B. Denney. All Rights Reserved.
 
 import pytest
-from pangolin import SimpleMemoryManager
-from pangolin.messages import ChatRecord, Part, ToolCall
+from pangolin_agent import SimpleMemoryManager
+from pangolin_agent.messages import ChatRecord, Part, ToolCall
 
 @pytest.fixture
 def mock_simple_mm():

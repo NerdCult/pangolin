@@ -1,14 +1,14 @@
 #Copyright (c) 2026 Gene B. Denney. All Rights Reserved.
 
-from pangolin.api_providers.open_ai_provider import openai_agent_runtime
-from pangolin import SQLiteMemoryManager, AdvancedSkillManager, PangolinToolbox, DefaultGuardrail
-from pangolin.utils import copy_built_in_skills, copy_built_in_tools
+from pangolin_agent.api_providers.open_ai_provider import openai_agent_runtime
+from pangolin_agent import SQLiteMemoryManager, AdvancedSkillManager, PangolinToolbox, DefaultGuardrail
+from pangolin_agent.utils import copy_built_in_skills, copy_built_in_tools
 #from pangolin import cli # use the built in low dependency cli
 from cli import cli # color-coded output cli included in the examples folder (requires colorama and pynput, and contains cli_async and cli_queue as demos for hooking to the runtime output)
 from uuid import UUID, uuid4
 
 #### ONLY NEEDS TO BE RUN ONCE, OR IF THE COPIES GET DELETED OR ALTERED. ####
-from pangolin.utils import copy_built_in_skills, copy_built_in_tools
+from pangolin_agent.utils import copy_built_in_skills, copy_built_in_tools
 copy_built_in_tools() # copies the basic built-in tools to current working directory/tools/  use copy_built_in_power_tools for create_tool, write_file, delete_file, and run_sh, review and understand these tools before letting you agent use them
 copy_built_in_skills() # copies the built-in skills to current working directory/skills/   (built-in skills are primarily so the agent can help develop against this library)
 ####

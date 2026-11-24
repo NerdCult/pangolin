@@ -1,8 +1,8 @@
 #Copyright (c) 2026 Gene B. Denney. All Rights Reserved.
 
 import pytest
-from pangolin.api_providers.gemini_provider import GeminiClient
-from pangolin.messages import ChatRecord, Part, ToolCall
+from pangolin_agent.api_providers.gemini_provider import GeminiClient
+from pangolin_agent.messages import ChatRecord, Part, ToolCall
 from google import genai
 
 @pytest.fixture
