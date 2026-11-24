@@ -57,7 +57,7 @@ class RAGSkillManager(SkillManager, RAGComponent):
             import fastembed
             import chromadb
         except ImportError:
-            raise PangolinImportError('RAGSkillManager requires extra dependencies run pip install pangolin[rag]')
+            raise PangolinImportError('RAGSkillManager requires extra dependencies run pip install pangolin-agent[rag]')
         
         self.skills_this_turn: str = ''
         self.docs_folder = Path(docs_folder)

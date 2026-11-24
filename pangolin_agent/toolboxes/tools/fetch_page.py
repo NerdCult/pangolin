@@ -16,7 +16,7 @@ def run(url: str, max_chars: int =6000):
         import requests
         from bs4 import BeautifulSoup
     except:
-        return 'fetch_page requires extra dependencies (requests, bs4), the user needs to run pip install pangolin[tools]'
+        return 'fetch_page requires extra dependencies (requests, bs4), the user needs to run pip install pangolin-agent[tools]'
     r = requests.get(url, timeout=15, headers={"User-Agent": "Mozilla/5.0 OpenAgent"})
     r.raise_for_status()
     soup = BeautifulSoup(r.text, "html.parser")

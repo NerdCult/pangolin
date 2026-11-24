@@ -4,7 +4,7 @@ from ..core.exceptions import PangolinImportError
 try:
     from openai import OpenAI, AsyncOpenAI
 except:
-    raise PangolinImportError('using openai_provider requires the openai library, pip install pangolin[openai]')
+    raise PangolinImportError('using openai_provider requires the openai library, pip install pangolin-agent[openai]')
 import json, logging
 from typing import Iterator, Protocol
 from ..core.interfaces import Provider, Client, MemoryManager, SkillManager, Toolbox, Guardrail, RAGComponent

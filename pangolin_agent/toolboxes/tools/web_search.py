@@ -18,7 +18,7 @@ def run(query: str, max_results: int =5):
     try:
         from ddgs import DDGS
     except:
-        return 'web_search requires extra dependencies (ddgs), the user needs to use pip install pangolin[tools]'
+        return 'web_search requires extra dependencies (ddgs), the user needs to use pip install pangolin-agent[tools]'
     with DDGS() as d:
         results = d.text(query, max_results=int(max_results))
     return [{"title": r.get("title"), "url": r.get("href"), "snippet": r.get("body")} for r in results]

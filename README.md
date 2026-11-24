@@ -16,13 +16,7 @@ Pangolin is a AI Agent library developed with Python >= 3.14. Built to be simple
 
 ## Quick Start: Hello Pangolin
 
-Until I get it pushed up to PyPI for pip install you can git clone > cd ./pangolin > python -m pip install -e . and it will be treated like an installed package.
-
-```
-git clone https://github.com/NerdCult/pangolin.git
-cd pangolin
-python -m pip install -e .
-```
+Install with `pip install pangolin-agent`
 
 The sample below runs a simple command-line chat interface. 
 **Pangolin was intentionally kept dependency light, so you will need to install openai, anthropic, and/or google-genai as you plan to use them.**

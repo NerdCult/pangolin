@@ -14,7 +14,7 @@ def copy_built_in_tools(target_dir: str = f'{os.getcwd()}/tools'):
             print(f'copying {file.name}')
             shutil.copy2(file, dst_path)
         
-    print ('some tools require extra dependencies, use pip install pangolin[tools]')
+    print ('some tools require extra dependencies, use pip install pangolin-agent[tools]')
 
 def copy_built_in_power_tools(target_dir: str = f'{os.getcwd()}/tools'):
     ''' helper function to copy the built-in POWER tools to the folder where you manage your own tools. VERIFY ALL TOOL FILES BEFORE ALLOWING AND AGENT TO EXECUTE THEM. SOME ARE QUITE POWERFUL. create_tool, delete_file, write_file, run_sh '''

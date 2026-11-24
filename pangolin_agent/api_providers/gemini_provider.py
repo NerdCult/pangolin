@@ -5,7 +5,7 @@ try:
     from google import genai
     from google.genai import types
 except:
-    raise PangolinImportError('using gemini_provider requires the google-genai library, pip install pangolin[gemini]')
+    raise PangolinImportError('using gemini_provider requires the google-genai library, pip install pangolin-agent[gemini]')
 import logging, uuid, base64
 from typing import Iterator, Protocol, AsyncGenerator
 from ..core.interfaces import Provider, Client, MemoryManager, Toolbox, SkillManager, Guardrail, RAGComponent
