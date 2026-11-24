@@ -1,5 +1,5 @@
 from pangolin_agent.api_providers.gemini_provider import gemini_agent_runtime
-#from pangolin import cli # use the built in low dependency cli
+#from pangolin_agent import cli # use the built in low dependency cli
 from cli import cli # color-coded output cli included in the examples folder (requires colorama and pynput, and contains cli_async and cli_queue as demos for hooking to the runtime output)
 
 #Create a basic instance of AgentRuntime

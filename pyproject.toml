@@ -20,6 +20,10 @@ dependencies = [
     "dataclasses-json>=0.6.0",
 ]
 
+
+[project.urls]
+Homepage = "https://github.com/NerdCult/pangolin"
+
 [project.optional-dependencies]
 openai = ["openai>=1.0.0"]
 anthropic = ["anthropic>=0.30.0"]

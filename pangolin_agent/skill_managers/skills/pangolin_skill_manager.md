@@ -71,7 +71,7 @@ copy_built_in_skills()
 ## Skeleton
 
 ```python
-from pangolin.core.interfaces import SkillManager
+from pangolin_agent.core.interfaces import SkillManager
 
 class StaticSkills(SkillManager):
     def __init__(self, text: str):

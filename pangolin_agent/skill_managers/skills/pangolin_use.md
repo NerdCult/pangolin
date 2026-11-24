@@ -5,7 +5,7 @@ description: Load when building an app that uses the Pangolin AI Agentic library
 
 Wire an app. Do not implement PangolinRuntime, PangolinComposer. Those already exist.
 
-Imports are absolute. `from pangolin.agent_runtimes import PangolinRuntime` works. `from .agent_runtimes import ...` does not work outside the package.
+Imports are absolute. `from pangolin_agent.agent_runtimes import PangolinRuntime` works. `from .agent_runtimes import ...` does not work outside the package.
 
 ## Smallest session
 

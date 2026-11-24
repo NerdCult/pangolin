@@ -3,7 +3,7 @@
 from pangolin_agent.api_providers.open_ai_provider import openai_agent_runtime
 from pangolin_agent import SQLiteMemoryManager, AdvancedSkillManager, PangolinToolbox, DefaultGuardrail
 from pangolin_agent.utils import copy_built_in_skills, copy_built_in_tools
-#from pangolin import cli # use the built in low dependency cli
+#from pangolin_agent import cli # use the built in low dependency cli
 from cli import cli # color-coded output cli included in the examples folder (requires colorama and pynput, and contains cli_async and cli_queue as demos for hooking to the runtime output)
 from uuid import UUID, uuid4
 
