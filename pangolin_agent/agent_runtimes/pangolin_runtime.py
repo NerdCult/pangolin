@@ -102,38 +102,13 @@ class PangolinRuntime(AgentRuntime, AgentRuntimeToQueue, Protocol):
         ''' Get the list of tool schemas '''
         return await ensure_async(self.toolbox.schemas) if self.toolbox else None
 
+
     async def _handle_agent_message(self, agent_message: AgentMessage, tool_calls: list, blocked_tool_call_ids: list, reason: list):
                 # if the ApiAggregator yields a message event add it to the context and check it for tool_calls
                 if agent_message.behavior == 'message':
                     LOGGER.info(f'assistant message recieved: {agent_message.chat_record}')
                     if agent_message.chat_record and self.guardrail:
                         ger = await ensure_async(self.guardrail.handle_guardrail_event,
-                            GuardrailEvent(
-                                event_type='assistant_output',
-                                chat_record=agent_message.chat_record
-                            )
-                        )
-
-                        if ger.event_type == 'deny':
-                            raise PangolinGuardRailDenial(f'AgentMessage triggered a Guardrail denial {ger.reason}')
-                        if ger.event_type == 'modify':
-                            agent_message.chat_record = ger.chat_record
-                            reason['reason'] = ger.reason
-                            for rtci in ger.rejected_tool_call_ids or []:
-                                blocked_tool_call_ids.append(rtci)
-
-                    if agent_message.chat_record.tool_calls:
-                        for tc in agent_message.chat_record.tool_calls:
-                            tool_calls.append(tc) 
-                    
-                    await self._add_context(agent_message.chat_record)
-
-    async def _handle_agent_message(self, agent_message: AgentMessage, tool_calls: list, blocked_tool_call_ids: list, reason: list):
-                # if the ApiAggregator yields a message event add it to the context and check it for tool_calls
-                if agent_message.behavior == 'message':
-                    LOGGER.info(f'assistant message recieved: {agent_message.chat_record}')
-                    if agent_message.chat_record and self.guardrail:
-                        ger = await self.guardrail.handle_guardrail_event(
                             GuardrailEvent(
                                 event_type='assistant_output',
                                 chat_record=agent_message.chat_record
