@@ -28,8 +28,8 @@ The sample below runs a simple command-line chat interface.
 **Pangolin was intentionally kept dependency light, so you will need to install openai, anthropic, and/or google-genai as you plan to use them.**
 
 ```python
-from pangolin.api_providers.open_ai_provider import openai_agent_runtime
-from pangolin import cli
+from pangolin_agent.api_providers.open_ai_provider import openai_agent_runtime
+from pangolin_agent import cli
 # from cli import cli # use the cli.py from the examples folder for color coded output and async examples. (requires colorama and pynput)
 
 #Create a basic instance of AgentRuntime
@@ -72,7 +72,7 @@ When you see the `USER>` prompt, type your message and hit Enter. The cli from e
 - To copy the built-in tools and skills run this script (moves them into the current working directory in tools and skills folders or you can set your own target dir, set the same directory when initializing your AdvancedSkillManager and PangolinToolbox):
 
 ```python
-from pangolin import copy_built_in_tools, copy_built_in_skills
+from pangolin_agent import copy_built_in_tools, copy_built_in_skills
 
 copy_built_in_tools() 
 copy_built_in_skills()

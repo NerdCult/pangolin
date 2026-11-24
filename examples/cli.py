@@ -3,8 +3,8 @@
 from colorama import Fore, init
 from pynput import keyboard
 import asyncio, threading
-from pangolin.core.interfaces import AgentRuntime, AgentRuntimeToQueue, AgentRuntimeAsync
-from pangolin.messages.chat_record import user_record
+from pangolin_agent.core.interfaces import AgentRuntime, AgentRuntimeToQueue, AgentRuntimeAsync
+from pangolin_agent.messages.chat_record import user_record
 
 init(autoreset=True)
 
