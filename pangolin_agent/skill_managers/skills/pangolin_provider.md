@@ -22,7 +22,7 @@ The runtime never sees a Provider. Application code does. `make_client` returns 
 def get_stream(self, records: list[ChatRecord], tools: list[dict] | None = None) -> Iterator[ApiEvent]: ...
 ```
 
-Async, only if something will call it: `async def get_stream_async(...) -> AsyncGenerator[ApiEvent]`. PangolinComposer's async path requires ClientAsync. A sync-only client still works with `handle_user_message`.
+PangolinComposer is the class that calls the Client and can handle sync and async implementations.
 
 Inputs are ChatRecords and use Pangolin roles: `system`, `user`, `assistant`, `tool`. Convert them inside the client. Tool results are `role='tool'` with `tool_call_id` and text in `content[0].data['text']`. Assistant tool calls are `record.tool_calls: list[ToolCall]`, each with `id`, `name`, `args`.
 
@@ -34,7 +34,7 @@ Inputs are ChatRecords and use Pangolin roles: `system`, `user`, `assistant`, `t
 
 `None` means no tools. Do not invent a tools list.
 
-Output is an iterator of `ApiEvent`, not SDK chunks, not `AgentMessage`.
+Output is an iterator of `ApiEvent`, not SDK chunks, not `AgentMessage`. Do not yield a event_type='message'.
 
 ```python
 ApiEvent(event_type="thinking" | "replying" | "tool_call" | "done" | "error",
@@ -63,7 +63,8 @@ PangolinComposer calls `get_stream`, yields display AgentMessages for thinking /
 ```python
 def my_agent_runtime(model: str, key: str, system_prompt: str = "",
                      memory_manager=None, skill_manager=None, toolbox=None,
-                     guardrail=None, max_tokens: int = 32_000, max_rounds: int = 10, **api_kwargs):
+                     guardrail=None,
+                     rag_connection=None, max_tokens: int = 32_000, max_rounds: int = 10, **api_kwargs):
     from pangolin_agent.agent_runtimes import PangolinRuntime
     from pangolin_agent.response_composers import PangolinComposer
     from pangolin_agent.memory_managers import SimpleMemoryManager
@@ -73,9 +74,11 @@ def my_agent_runtime(model: str, key: str, system_prompt: str = "",
         memory_manager=memory_manager or SimpleMemoryManager(),
         skill_manager=skill_manager,
         toolbox=toolbox,
+        rag_connection=rag_connection
         guardrail=guardrail,
         max_tokens=max_tokens,
         max_rounds=max_rounds,
+        **api_kwargs
     )
 ```
 

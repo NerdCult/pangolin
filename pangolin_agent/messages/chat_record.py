@@ -26,18 +26,18 @@ class ChatRecord:
 
 def user_record( text: str) -> ChatRecord:
     '''
-    helper function to create a user TARecord 
+    helper function to create a user ChatRecord 
     '''
     return ChatRecord(role='user', content=[Part(type='text',data={'text': text})])
 
 def assistant_record( text: str) -> ChatRecord:
     '''
-    helper function to create a user TARecord 
+    helper function to create a user ChatRecord 
     '''
     return ChatRecord(role='assistant', content=[Part(type='text', data={'text': text})])
 
 def system_record(text: str) -> ChatRecord:
     '''
-    helper function to create a user TARecord 
+    helper function to create a user ChatRecord 
     '''
     return ChatRecord(role='system', content=[Part(type='text', data={'text': text})])

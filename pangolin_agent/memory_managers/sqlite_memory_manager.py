@@ -17,12 +17,12 @@ DEFAULT_MAX_TO_RELOAD = 8000
 class SQLiteMemoryManager(IdTrackedMemoryManager):
     '''
     Stores chat histories in a sqlite database by chat id.
-    An in-memory list of TARecords is used to maintain what gets provided to AgentRuntime.
+    An in-memory list of ChatRecords is used to maintain what gets provided to AgentRuntime.
     The sqlite database is for persitence after restart.
     '''
     def __init__(self, sqlite_folder: str = f'{os.getcwd()}/db', chat_id: UUID | None = None, reload_token_limit: int = DEFAULT_MAX_TO_RELOAD):
         '''
-        sqlite_path: the folder where the database should be created. default is current working directory /db. the file created is ta_records.db
+        sqlite_path: the folder where the database should be created. default is current working directory /db. the file created is chat_records.db
         chat_id: can be provided to resume a session or one is created.
         reload_token_limit: the maximum tokens to reload when resuming a session
         '''
@@ -32,7 +32,7 @@ class SQLiteMemoryManager(IdTrackedMemoryManager):
         self.reload_token_limit: int = reload_token_limit
 
         Path(sqlite_folder).mkdir(parents=True, exist_ok=True)
-        self.db_path = f'{sqlite_folder}/ta_records.db'
+        self.db_path = f'{sqlite_folder}/chat_records.db'
         try:
             self._verify_tables() # verify the required tables exist
             chat_summary = self._get_chat_summary()

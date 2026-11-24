@@ -20,7 +20,7 @@ class PangolinComposer(ResponseComposer,  Protocol):
         if event.event_type == "thinking":
             return AgentMessage(behavior= 'thinking', content= event.content)
 
-        # the LLM responses are consolidated as they come in so a complete TARecord content can be output after the stream ends
+        # the LLM responses are consolidated as they come in so a complete ChatRecord content can be output after the stream ends
         if event.event_type == "replying":
             reply_accumulator[0] += event.content
             return AgentMessage(behavior='replying', content= event.content)

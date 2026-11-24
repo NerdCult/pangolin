@@ -5,19 +5,11 @@ description: Load when writing a new Guardrail. Covers the three event types, ap
 
 Optional. If the app does not pass one, nothing is checked. DefaultGuardrail is the reference for "block these tool names." It is not installed by the factories.
 
-Sync protocol, required for `handle_user_message`:
 
 ```python
 def handle_guardrail_event(self, event: GuardrailEvent) -> GuardrailEventResponse: ...
 ```
-
-Async protocol, used only by `handle_user_message_async` and `handle_user_message_to_queue` when the object implements GuardrailAsync:
-
-```python
-async def handle_guardrail_event_async(self, event: GuardrailEvent) -> GuardrailEventResponse: ...
-```
-
-A class can implement both. A GuardrailAsync-only object cannot be used with the sync entry point. The runtime raises `PangolinValueError`. On the async path, a sync-only guardrail is called via `asyncio.to_thread`.
+PangolinRuntime handles sync and async implementations.
 
 ## Events
 
@@ -33,7 +25,7 @@ Display deltas (`thinking`, `replying`) are not guardrail events. You see the fi
 
 ## Responses
 
-`GuardrailEventResponse(event_type, reason=None, chat_record=None, rejected_tool_call_ids=None, inject_ta_records=None)`.
+`GuardrailEventResponse(event_type, reason=None, chat_record=None, rejected_tool_call_ids=None, inject_chat_records=None)`.
 
 | response | user_input | assistant_output | tool_call_result |
 |---|---|---|---|
@@ -41,9 +33,9 @@ Display deltas (`thinking`, `replying`) are not guardrail events. You see the fi
 | `modify` | `chat_record` is stored instead | `chat_record` replaces the assistant message. `rejected_tool_call_ids` are not executed. `reason` is stored as the tool result for each blocked id | `chat_record` is stored instead of the real result |
 | `deny` | Raises `PangolinGuardRailDenial`. Turn ends as `behavior='guardrail'` | Same | **Not special.** The runtime only checks `modify`. `deny` does not stop the turn and does not replace the result |
 
-`inject_ta_records` is never read. Set it and nothing happens.
+`inject_chat_records` is never read. Set it and nothing happens. Planned for future possible use cases.
 
-Blocked tool calls still need a tool-role record or the next API call breaks. The runtime does that for ids in `rejected_tool_call_ids`, using `reason` as the text. Do not also delete those calls from `chat_record.tool_calls` unless you want the model to forget it asked. DefaultGuardrail leaves the calls on the record and lists the ids.
+Blocked tool calls still need a tool-role record or the next API call breaks. The runtime does that for ids in `rejected_tool_call_ids`, using `reason` as the text. Do not also delete those calls from `chat_record.tool_calls` unless you want the model to forget it asked. DefaultGuardrail leaves the calls on the record and lists the ids. PangolinRuntime does not send the rejected tool calls to the toolbox but just inserts the reject 'reason' as the result.
 
 `reason` on a `modify` of assistant output should be model-readable. It becomes the tool result. "tool blocked by the current runtime guardrail policy" is the built-in text.
 

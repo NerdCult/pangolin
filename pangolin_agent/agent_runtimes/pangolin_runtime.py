@@ -89,7 +89,7 @@ class PangolinRuntime(AgentRuntime, AgentRuntimeToQueue, Protocol):
         
     async def _get_context(self):
         '''
-        Assembles the current record set, without the tools list, as a list[TARecord] 
+        Assembles the current record set, without the tools list, as a list[ChatRecord] 
         '''
         LOGGER.debug('_get_context')
         skills = await ensure_async(self.skill_manager.skills) if self.skill_manager else ''

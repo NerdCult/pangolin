@@ -38,8 +38,8 @@ class SmokeTestClient(Client, Protocol):
         self.list_tools = list_tools
 
     async def get_stream(self, records, tools = None):
-        LOGGER.info(f'SMOKE TEST RECEIVED {len(records)} TARecords {len(tools) if tools else 0} tools')
-        print(f'SMOKE TEST RECEIVED {len(records)} TARecords {len(tools) if tools else 0} tools')
+        LOGGER.info(f'SMOKE TEST RECEIVED {len(records)} ChatRecords {len(tools) if tools else 0} tools')
+        print(f'SMOKE TEST RECEIVED {len(records)} ChatRecords {len(tools) if tools else 0} tools')
         if self.show_system and records[0].role == 'system':
             LOGGER.info(f'SYSTEM:\n{records[0].content[0].data['text']}')
             print (f'SYSTEM:\n{records[0].content[0].data['text']}')

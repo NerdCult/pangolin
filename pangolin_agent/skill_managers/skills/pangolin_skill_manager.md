@@ -5,7 +5,7 @@ description: Load when writing a new SkillManager. Covers skills, reload_skills,
 
 The runtime calls `skills()` once per turn and concatenates the string onto the system prompt. It never calls `load_skill`, `unload_skill`, `create_skill`, or `reload_skills`. Those are for tools or the host app.
 
-Reference: `SimpleSkillManager` (base protocol), `AdvancedSkillManager` (SkillMaker). Built-in skill files are demos. Do not treat them as the format spec if they disagree with the parser below.
+Reference: `SimpleSkillManager` (base protocol), `AdvancedSkillManager` (SkillMaker). Built-in skill files are focused on how to use and develop for this library. Do not treat them as the format spec if they disagree with the parser below.
 
 ## Base protocol
 
@@ -49,7 +49,7 @@ SimpleSkillManager does not parse front matter. It concatenates the raw file. A 
 
 ## Session-aware tool contract
 
-The toolbox skill owns the tool file. From this side, the tool receives the runtime and calls:
+The toolbox owns the tool files. From this side, the tool receives the runtime and calls:
 
 ```python
 session.skill_manager.load_skill(skill_name)
