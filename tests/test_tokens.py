@@ -6,7 +6,7 @@ from pangolin_agent.utils.token_calculator import message_tokens
 
 @pytest.fixture
 def mock_record():
-    """A fixture to provide a fake TARecord for testing."""
+    """A fixture to provide a fake ChatRecord for testing."""
     record = ChatRecord(role='user', content=[Part(type='text', data={'text': 'hello, world!'})])
     return record
 

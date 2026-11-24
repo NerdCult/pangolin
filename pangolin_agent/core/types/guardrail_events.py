@@ -22,4 +22,4 @@ class GuardrailEventResponse():
     reason: str | None = None
     chat_record: ChatRecord | None = None
     rejected_tool_call_ids: list[str] | None = None
-    inject_ta_records: list[ChatRecord] | None = None
+    inject_chat_records: list[ChatRecord] | None = None

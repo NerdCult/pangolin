@@ -9,6 +9,6 @@ class ResponseComposer(Protocol):
     '''
     recieves the context and tools schemas from the AgentRuntime, passes to the API Client, and handles the returned ApiEvents; 
     passes deltas through as AgentMessages for responsive user experience
-    aggregates the deltas to create TARecords and passes them through for the AgentRuntime to process.
+    aggregates the deltas to create ChatRecords and passes them through for the AgentRuntime to process.
     '''
     def process_context(self, records: list[ChatRecord], tools: list[dict]) -> Iterator[AgentMessage]: ...

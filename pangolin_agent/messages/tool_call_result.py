@@ -5,7 +5,7 @@ from dataclasses import dataclass
 @dataclass
 class ToolCallResult:
     '''
-    data class used to store tool call results in a TARecord
+    data class used to store tool call results in a ChatRecord
     '''
     id: str
     result: str

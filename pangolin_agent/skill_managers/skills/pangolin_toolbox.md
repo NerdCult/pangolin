@@ -3,7 +3,7 @@ description: Load when writing a new Toolbox, or a session-aware tool. Covers lo
 ---
 # Toolbox
 
-A normal tool file dropped into a PangolinToolbox folder is application wiring, not this skill. This skill is for a new Toolbox class, or a tool that needs the runtime.
+A normal tool file dropped into a PangolinToolbox folder is application wiring. This doc is for a new Toolbox class, or a tool that needs the runtime.
 
 Reference: `BasicToolbox` (Toolbox), `PangolinToolbox` (ToolboxAdvanced).
 
@@ -14,6 +14,7 @@ def load(self) -> None: ...
 def schemas(self) -> list[dict]: ...
 def handle_tool_calls(self, calls: list[ToolCall]) -> Iterator[ToolCallResult]: ...
 ```
+PangolinRuntime handles sync or async implementations of handle_tool_calls and schems().
 
 The runtime calls `load()` once, from `PangolinRuntime.__init__`, before the first turn. It calls `schemas()` every turn. It calls `handle_tool_calls` only when the assistant message had tool calls.
 
