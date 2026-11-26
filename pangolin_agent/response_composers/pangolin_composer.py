@@ -31,8 +31,13 @@ class PangolinComposer(ResponseComposer,  Protocol):
                 tool_calls.append(tc)
             return AgentMessage(behavior='tool_calls', content=f'{tool_calls}')
 
+        if event.event_type == "usage":
+            return AgentMessage(behavior='usage', usage=event.usage)
+
         if event.event_type  == "done":
             return AgentMessage( behavior= 'done', content= event.content)
+
+        return AgentMessage(behavior='error', content='composer recieved unknown ApiEvent.event_type')
 
     async def process_context(self, context: list[ChatRecord], tools: list[dict]):
         LOGGER.info(f'processing context with {len(context)} records and {len(tools) if tools else '0'}tools')
