@@ -12,7 +12,7 @@ from ..core.exceptions import PangolinTypeError
 from ..response_composers import PangolinComposer
 from ..agent_runtimes import PangolinRuntime
 from ..memory_managers import SimpleMemoryManager
-from ..messages import ChatRecord, Part, ApiEvent, ToolCall
+from ..messages import ChatRecord, Part, ApiEvent, Usage, ToolCall
 
 LOGGER = logging.getLogger(__name__)
 
@@ -118,6 +118,7 @@ class OpenAIClient(Client, Protocol):
             messages=self._records_to_openai(records),
             tools=tools,
             stream=True,
+            stream_options={'include_usage': True},
             **self.api_kwargs)
 
         calls = {}
@@ -125,12 +126,16 @@ class OpenAIClient(Client, Protocol):
     
         async for chunk in stream:
             if not chunk.choices:
-                continue
+                if hasattr(chunk, 'usage') and chunk.usage:
+                    yield ApiEvent(event_type='usage', usage=Usage(
+                        prompt_tokens=chunk.usage.prompt_tokens, 
+                        completion_tokens=chunk.usage.completion_tokens, 
+                        total_tokens=chunk.usage.total_tokens,
+                        raw=dict(chunk.usage)))
+                    break
             api_event = self._process_chunk(chunk, calls, raw_args)
             if api_event:
                 yield api_event
-                if api_event.event_type == 'done':
-                    break
             
         if calls:
             yield self._process_tool(calls, raw_args)

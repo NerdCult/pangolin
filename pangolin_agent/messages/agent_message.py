@@ -4,8 +4,9 @@ from dataclasses import dataclass
 from dataclasses_json import dataclass_json
 from typing import Literal
 from .chat_record import ChatRecord
+from .api_event import Usage
 
-agent_message_type = Literal['thinking', 'replying', 'tool_calls', 'message', 'done', 'error', 'guardrail']
+agent_message_type = Literal['thinking', 'replying', 'tool_calls', 'message', 'usage', 'done', 'error', 'guardrail']
 
 @dataclass_json
 @dataclass
@@ -14,3 +15,4 @@ class AgentMessage:
     behavior: agent_message_type
     content: str = '' 
     chat_record: ChatRecord | None = None
+    usage : Usage | None = None

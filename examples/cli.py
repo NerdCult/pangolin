@@ -3,7 +3,7 @@
 from colorama import Fore, init
 from pynput import keyboard
 import asyncio, threading
-from pangolin_agent.core.interfaces import AgentRuntime, AgentRuntimeToQueue, AgentRuntimeAsync
+from pangolin_agent.core.interfaces import AgentRuntime, AgentRuntimeToQueue
 from pangolin_agent.messages.chat_record import user_record
 
 init(autoreset=True)
@@ -30,6 +30,9 @@ def printout(a, behaviors):
             print (Fore.CYAN + '\nagent> ', end="")
         print (Fore.CYAN + content, end="")
 
+    if behavior == 'usage':
+        print (Fore.LIGHTWHITE_EX + f'\n<<USAGE>> {a.usage}', end="")
+
     if behavior == 'tool_calls':
         if not behaviors['using_tool']:
             behaviors['thinking'] = False
@@ -51,10 +54,6 @@ def cli(session: AgentRuntime):
 
 async def cli_async(session: AgentRuntime):
     '''same as cli() but implements the async work flow '''
-    if not isinstance(session, AgentRuntimeAsync):
-        raise TypeError('Agent Runtime does not implement AgentRuntimeAsync')
-
-
     stop = threading.Event()
 
     def on_key(key):

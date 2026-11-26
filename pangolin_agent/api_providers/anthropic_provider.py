@@ -7,7 +7,7 @@ except:
     raise PangolinImportError('using anthropic_provider requires the anthropic library, pip install pangolin-agent[anthropic]')
 from typing import Iterator, Protocol, AsyncGenerator
 import logging
-from ..messages import ChatRecord, Part, ApiEvent, ToolCall
+from ..messages import ChatRecord, Part, ApiEvent, Usage, ToolCall
 from ..core.interfaces import Client, Provider, MemoryManager, Toolbox, SkillManager, Guardrail, RAGComponent
 from ..memory_managers import SimpleMemoryManager
 from ..response_composers import PangolinComposer
@@ -166,6 +166,9 @@ class AnthropicClient(Client, Protocol):
     def _process_event(self, event):
         calls: dict[str,ToolCall] = {}
         event_type = getattr(event, "type", None)
+
+        if event_type == 'message_delta':
+            return ApiEvent(event_type='usage', usage=Usage(prompt_tokens=event.usage.input_tokens, completion_tokens=event.usage.output_tokens, raw=dict(event.usage)))
 
         if event_type == "text":
             LOGGER.debug(f'replying {event.text}')

@@ -79,6 +79,7 @@ Missing optional pieces stay None except memory, which becomes SimpleMemoryManag
 | `replying` | Display `content`. Deltas, so print with `end=""`. Likely the full response will come across several of these events. |
 | `tool_calls` | Display only. `content` is the calls repr. |
 | `message` | Already stored by the runtime. Skip unless you inspect `chat_record`. |
+| `usage` | If the API provides usage, AgentMessage.usage will be set with prompt_tokens, completion_tokens, total_tokens, and the raw usage message as a dict. |
 | `done` | Round finished. |
 | `error` | `content` is the exception. The loop ended. |
 | `guardrail` | Denied. `content` is the denial. The loop ended. |

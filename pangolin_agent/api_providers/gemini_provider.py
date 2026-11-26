@@ -12,7 +12,7 @@ from ..core.interfaces import Provider, Client, MemoryManager, Toolbox, SkillMan
 from ..memory_managers import SimpleMemoryManager
 from ..response_composers import PangolinComposer
 from ..agent_runtimes import PangolinRuntime
-from ..messages import ChatRecord, ApiEvent, ToolCall
+from ..messages import ChatRecord, ApiEvent, Usage, ToolCall
 
 LOGGER = logging.getLogger(__name__)
 
@@ -114,14 +114,25 @@ class GeminiClient(Client, Protocol):
             **self.api_kwargs
         )
 
+        final_chunk = None
+
         calls, finish_event = [], ApiEvent(event_type='done')
         response = await self.client.aio.models.generate_content_stream(model=self.model_name, contents=contents, config=config)
         async for chunk in response:
+            final_chunk = chunk
             if not chunk.candidates:
                 continue
             api_event = self._process_chunk(chunk, calls, finish_event)
             if api_event:
                 yield api_event
+
+        if final_chunk:
+            yield ApiEvent(event_type='usage', usage=Usage(
+                prompt_tokens=final_chunk.usage_metadata.prompt_token_count,
+                completion_tokens= final_chunk.usage_metadata.candidates_token_count,
+                total_tokens= final_chunk.usage_metadata.total_token_count,
+                raw=dict(final_chunk.usage_metadata)
+            ))
 
         if calls:
             LOGGER.info(f'tool calls: {calls}')

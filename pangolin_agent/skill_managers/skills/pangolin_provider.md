@@ -47,6 +47,7 @@ ApiEvent(event_type="thinking" | "replying" | "tool_call" | "done" | "error",
 | `replying` | Visible text delta | `content` is the delta, not the full text so far |
 | `thinking` | Reasoning delta, if the API has it | `content` delta |
 | `tool_call` | Model asked for tools | `tool_calls` is the complete list for this assistant turn, not a partial fragment, unless you are prepared to match what PangolinComposer expects from the built-in clients |
+| `usage` | API provided usage counts | `usage` must be set |
 | `done` | Stream finished cleanly | `content` optional |
 | `error` | Provider failed | `content` is the message |
 
