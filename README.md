@@ -1,3 +1,4 @@
+
 **UNDER CONSTRUCTION** — Early preview. Things will break. Feedback welcome.
 
 **License:** This software is released under the [PolyForm Noncommercial License 1.0.0](LICENSE). You're free to use it for personal, educational, research, and non-commercial projects.
@@ -12,7 +13,9 @@ Email me at gbdenney84@gmail.com to inquire about a license (or open a GitHub is
 For full legal terms, see the [LICENSE](LICENSE) file. Commercial use or uses outside the license always requires explicit written approval from the copyright holder (Gene B. Denney).
 
 ## Introduction
-Pangolin is a AI Agent library developed with Python >= 3.14. Built to be simple and functional out-of-the-box but completely extensible and customisable. Each component implements a Python Protocol and each edge has an internal data class for normalization. The core object is the PangolinRuntime. PangolinRuntime is an orchestrator and agent loop manager, moving from one step to the next as each component finishes its responsibility. The component based design with Protocol contracts and data normalization types, means any one component (skills, memory, tools, api, guardrails) can be implemented by a developer without having to touch the rest of the life cycle.
+Pangolin is a AI Agent library developed with Python >= 3.14. Built to be simple and functional out-of-the-box but completely extensible and customizable. Each component implements a Python Protocol and each edge has an internal data class for normalization. The core object is the PangolinRuntime. PangolinRuntime is an orchestrator and agent loop manager, moving from one step to the next as each component finishes its responsibility. The component based design with Protocol contracts and data normalization types, means any one component (skills, memory, tools, api, guardrails) can be implemented by a developer without having to touch the rest of the life cycle. 
+
+<img width="2730" height="1536" alt="pa_architecture" src="https://github.com/user-attachments/assets/4f5992b9-eced-4028-9c28-ba5759537992" />
 
 ## Quick Start: Hello Pangolin
 
